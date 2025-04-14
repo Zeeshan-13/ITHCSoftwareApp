@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, jsonify
-from models.software import db, Software, Project, Release, Customer
+from flask import Flask, render_template, request, jsonify, send_file
+from models.software import db, Software, Project, Release, Customer, ITHCSoftware
 from flask_migrate import Migrate
 from datetime import datetime
 import os
-from openpyxl import load_workbook
+from openpyxl import load_workbook, Workbook
 from werkzeug.utils import secure_filename
+import io
 
 def create_app(config_name='development'):
     app = Flask(__name__, 
@@ -72,6 +73,14 @@ def create_app(config_name='development'):
     @app.route('/projects')
     def projects():
         return render_template('projects.html')
+
+    @app.route('/ithc')
+    def ithc():
+        return render_template('ithc.html')
+
+    @app.route('/utilities')
+    def utilities():
+        return render_template('utilities.html')
 
     @app.route('/api/software', methods=['GET'])
     def get_software():
@@ -230,10 +239,14 @@ def create_app(config_name='development'):
             if 'name' not in data or not data['name']:
                 return jsonify({'error': 'Name is required'}), 400
 
-            # Check for duplicate name first
-            existing = Project.query.filter_by(name=data['name']).first()
+            # Check for duplicate name AND version combination
+            existing = Project.query.filter_by(
+                name=data['name'], 
+                software_version=data.get('software_version')
+            ).first()
+            
             if existing:
-                return jsonify({'error': 'Project with this name already exists'}), 400
+                return jsonify({'error': 'Project with this name and version already exists'}), 400
 
             new_project = Project(
                 name=data['name'],
@@ -288,6 +301,97 @@ def create_app(config_name='development'):
         ).all()
         return jsonify([p.to_dict() for p in projects])
 
+    @app.route('/api/projects/import', methods=['POST'])
+    def import_projects():
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if not allowed_file(file.filename):
+            return jsonify({'error': 'Invalid file type. Please upload an Excel file (.xlsx, .xls)'}), 400
+
+        try:
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+
+            workbook = load_workbook(filename=filepath)
+            sheet = workbook.active
+            
+            # Get headers from first row
+            headers = [cell.value for cell in sheet[1]]
+            
+            imported_count = 0
+            updated_count = 0
+            skipped_count = 0
+            
+            for row in sheet.iter_rows(min_row=2):
+                row_data = {headers[i]: cell.value for i, cell in enumerate(row) if cell.value is not None}
+                
+                # Map Excel columns to database fields
+                project_data = {
+                    'name': row_data.get('Name', ''),
+                    'description': row_data.get('Description', ''),
+                    'software_name': row_data.get('Software Name'),
+                    'software_version': row_data.get('Software Version')
+                }
+                
+                # Only process row if name is present
+                if project_data['name']:
+                    try:
+                        # Check for existing project with same name
+                        existing = Project.query.filter_by(name=project_data['name']).first()
+
+                        # Find associated software if specified
+                        software_id = None
+                        if project_data['software_name']:
+                            software = Software.query.filter_by(name=project_data['software_name']).first()
+                            if software:
+                                software_id = software.id
+                        
+                        if existing:
+                            # Update existing project if found
+                            existing.description = project_data['description'] or existing.description
+                            if software_id:
+                                existing.software_id = software_id
+                                existing.software_version = project_data['software_version']
+                            updated_count += 1
+                        else:
+                            # Create new project
+                            new_project = Project(
+                                name=project_data['name'],
+                                description=project_data['description'],
+                                software_id=software_id,
+                                software_version=project_data['software_version']
+                            )
+                            db.session.add(new_project)
+                            imported_count += 1
+                        
+                        db.session.commit()
+                    except Exception as e:
+                        print(f"Error processing project {project_data['name']}: {str(e)}")
+                        db.session.rollback()
+                        skipped_count += 1
+                
+            # Clean up uploaded file
+            os.remove(filepath)
+            
+            return jsonify({
+                'message': 'Import successful',
+                'imported': imported_count,
+                'updated': updated_count,
+                'skipped': skipped_count
+            })
+
+        except Exception as e:
+            # Clean up file if it exists
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            return jsonify({'error': f'Error processing file: {str(e)}'}), 500
+
     # Release routes
     @app.route('/api/projects/<int:project_id>/releases', methods=['POST'])
     def add_release(project_id):
@@ -341,6 +445,316 @@ def create_app(config_name='development'):
         project.customers.remove(customer)
         db.session.commit()
         return '', 204
+
+    @app.route('/api/customers/import', methods=['POST'])
+    def import_customers():
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if not allowed_file(file.filename):
+            return jsonify({'error': 'Invalid file type. Please upload an Excel file (.xlsx, .xls)'}), 400
+
+        try:
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+
+            workbook = load_workbook(filename=filepath)
+            sheet = workbook.active
+            
+            # Get headers from first row
+            headers = [cell.value for cell in sheet[1]]
+            
+            imported_count = 0
+            duplicates_count = 0
+            
+            for row in sheet.iter_rows(min_row=2):
+                row_data = {headers[i]: cell.value for i, cell in enumerate(row) if cell.value is not None}
+                
+                # Map Excel columns to database fields
+                customer_data = {
+                    'name': row_data.get('Name', row_data.get('Customer Name', row_data.get('name'))),
+                    'email': row_data.get('Email', row_data.get('email', '')),
+                    'contact_person': row_data.get('Contact Person', row_data.get('contact_person', ''))
+                }
+                
+                # Only process row if name is present
+                if customer_data['name']:
+                    try:
+                        # Check for existing customer with same name
+                        existing = Customer.query.filter_by(name=customer_data['name']).first()
+                        
+                        if existing:
+                            # Update existing customer if found
+                            existing.email = customer_data['email'] or existing.email
+                            existing.contact_person = customer_data['contact_person'] or existing.contact_person
+                            duplicates_count += 1
+                        else:
+                            # Create new customer if not found
+                            new_customer = Customer(
+                                name=customer_data['name'],
+                                email=customer_data['email'],
+                                contact_person=customer_data['contact_person']
+                            )
+                            db.session.add(new_customer)
+                            imported_count += 1
+                        
+                        db.session.commit()
+                    except Exception as e:
+                        print(f"Error processing customer {customer_data['name']}: {str(e)}")
+                        db.session.rollback()
+                
+            # Clean up uploaded file
+            os.remove(filepath)
+            
+            return jsonify({
+                'message': 'Import successful',
+                'imported': imported_count,
+                'updated': duplicates_count
+            })
+
+        except Exception as e:
+            # Clean up file if it exists
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            return jsonify({'error': f'Error processing file: {str(e)}'}), 500
+
+    # ITHC Software routes
+    @app.route('/api/ithc/software', methods=['GET'])
+    def get_ithc_software():
+        project_id = request.args.get('project_id')
+        project_version = request.args.get('project_version')
+        
+        query = ITHCSoftware.query
+        if project_id:
+            query = query.filter_by(project_id=project_id)
+        if project_version:
+            query = query.filter_by(project_version=project_version)
+            
+        ithc_list = query.all()
+        return jsonify([i.to_dict() for i in ithc_list])
+
+    @app.route('/api/ithc/software/<int:id>', methods=['GET'])
+    def get_ithc_software_by_id(id):
+        ithc = ITHCSoftware.query.get_or_404(id)
+        return jsonify(ithc.to_dict())
+
+    @app.route('/api/ithc/software', methods=['POST'])
+    def add_ithc_software():
+        try:
+            data = request.json
+            required_fields = ['project_id', 'software_id', 'project_version', 'current_software_version']
+            for field in required_fields:
+                if field not in data:
+                    return jsonify({'error': f'Missing required field: {field}'}), 400
+
+            # Check if project exists
+            project = Project.query.get(data['project_id'])
+            if not project:
+                return jsonify({'error': 'Project not found'}), 404
+
+            # Check if software exists
+            software = Software.query.get(data['software_id'])
+            if not software:
+                return jsonify({'error': 'Software not found'}), 404
+
+            # Check for duplicate entry
+            existing = ITHCSoftware.query.filter_by(
+                project_id=data['project_id'],
+                software_id=data['software_id'],
+                project_version=data['project_version']
+            ).first()
+            
+            if existing:
+                return jsonify({'error': 'Software version already exists for this project version'}), 400
+
+            new_ithc = ITHCSoftware(
+                project_id=data['project_id'],
+                software_id=data['software_id'],
+                project_version=data['project_version'],
+                current_software_version=data['current_software_version']
+            )
+            db.session.add(new_ithc)
+            db.session.commit()
+            return jsonify(new_ithc.to_dict()), 201
+
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/ithc/software/<int:id>', methods=['PUT'])
+    def update_ithc_software(id):
+        try:
+            ithc = ITHCSoftware.query.get_or_404(id)
+            data = request.json
+            
+            if 'current_software_version' in data:
+                ithc.current_software_version = data['current_software_version']
+            if 'project_version' in data:
+                ithc.project_version = data['project_version']
+            if 'software_id' in data:
+                ithc.software_id = data['software_id']
+            
+            db.session.commit()
+            return jsonify(ithc.to_dict())
+        
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/ithc/software/<int:id>', methods=['DELETE'])
+    def delete_ithc_software(id):
+        ithc = ITHCSoftware.query.get_or_404(id)
+        db.session.delete(ithc)
+        db.session.commit()
+        return '', 204
+
+    @app.route('/api/ithc/software/search', methods=['GET'])
+    def search_ithc_software():
+        project_name = request.args.get('project', '')
+        software_name = request.args.get('software', '')
+        
+        query = ITHCSoftware.query
+        if project_name:
+            query = query.join(Project).filter(Project.name.ilike(f'%{project_name}%'))
+        if software_name:
+            query = query.join(Software).filter(Software.name.ilike(f'%{software_name}%'))
+            
+        results = query.all()
+        return jsonify([r.to_dict() for r in results])
+
+    @app.route('/api/ithc/software/import', methods=['POST'])
+    def import_ithc():
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if not allowed_file(file.filename):
+            return jsonify({'error': 'Invalid file type. Please upload an Excel file (.xlsx, .xls)'}), 400
+
+        try:
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+
+            workbook = load_workbook(filename=filepath)
+            sheet = workbook.active
+            
+            # Get headers from first row
+            headers = [str(cell.value).strip() if cell.value else '' for cell in sheet[1]]
+            
+            imported_count = 0
+            updated_count = 0
+            skipped_count = 0
+            
+            for row in sheet.iter_rows(min_row=2):
+                row_data = {headers[i]: str(cell.value).strip() if cell.value else '' for i, cell in enumerate(row)}
+                
+                try:
+                    # Get project and software
+                    project = Project.query.filter_by(name=row_data.get('Project Name', '')).first()
+                    software = Software.query.filter_by(name=row_data.get('Software Name', '')).first()
+                    
+                    if not project or not software:
+                        print(f"Project or software not found for row: {row_data}")
+                        skipped_count += 1
+                        continue
+
+                    project_version = row_data.get('Project Version', '')
+                    current_version = row_data.get('Current Version', '')
+
+                    if not project_version or not current_version:
+                        print(f"Missing version information for row: {row_data}")
+                        skipped_count += 1
+                        continue
+
+                    # Check for existing entry
+                    existing = ITHCSoftware.query.filter_by(
+                        project_id=project.id,
+                        software_id=software.id,
+                        project_version=project_version
+                    ).first()
+
+                    if existing:
+                        existing.current_software_version = current_version
+                        updated_count += 1
+                    else:
+                        new_ithc = ITHCSoftware(
+                            project_id=project.id,
+                            software_id=software.id,
+                            project_version=project_version,
+                            current_software_version=current_version
+                        )
+                        db.session.add(new_ithc)
+                        imported_count += 1
+
+                    db.session.commit()
+                except Exception as e:
+                    print(f"Error processing ITHC row: {str(e)}")
+                    db.session.rollback()
+                    skipped_count += 1
+
+            # Clean up uploaded file
+            os.remove(filepath)
+            
+            return jsonify({
+                'message': 'Import successful',
+                'imported': imported_count,
+                'updated': updated_count,
+                'skipped': skipped_count
+            })
+
+        except Exception as e:
+            # Clean up file if it exists
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            return jsonify({'error': f'Error processing file: {str(e)}'}), 500
+
+    @app.route('/api/templates/<template_type>', methods=['GET'])
+    def get_template(template_type):
+        try:
+            wb = Workbook()
+            ws = wb.active
+            
+            if template_type == 'software':
+                ws.title = "Software Import Template"
+                headers = ['Name', 'Type', 'Latest Version', 'Check URL']
+                ws.append(headers)
+                
+            elif template_type == 'project':
+                ws.title = "Project Import Template"
+                headers = ['Name', 'Description', 'Software Name', 'Software Version']
+                ws.append(headers)
+                
+            elif template_type == 'ithc':
+                ws.title = "ITHC Import Template"
+                headers = ['Project Name', 'Project Version', 'Software Name', 'Current Version']
+                ws.append(headers)
+                
+            else:
+                return jsonify({'error': 'Invalid template type'}), 400
+
+            # Save to BytesIO object
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            
+            return send_file(
+                output,
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                as_attachment=True,
+                download_name=f'{template_type}_template.xlsx'
+            )
+
+        except Exception as e:
+            return jsonify({'error': f'Error generating template: {str(e)}'}), 500
 
     return app
 

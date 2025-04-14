@@ -281,3 +281,64 @@ describe('Software Module', () => {
     expect(console.error).toHaveBeenCalled();
   });
 });
+
+describe('Customer Import Form', () => {
+    beforeEach(() => {
+        document.body.innerHTML = `
+            <form id="importCustomersForm">
+                <input type="file" id="customerExcelFile" />
+                <button type="submit">Import</button>
+            </form>
+        `;
+        global.fetch = jest.fn();
+        global.FormData = jest.fn(() => ({
+            append: jest.fn()
+        }));
+    });
+
+    test('setupCustomerImportForm handles file import correctly', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ imported: 2, updated: 1 })
+        });
+
+        require('../static/js/main.js');
+        
+        const form = document.getElementById('importCustomersForm');
+        const fileInput = document.getElementById('customerExcelFile');
+        
+        Object.defineProperty(fileInput, 'files', {
+            value: [new File([''], 'customers.xlsx')]
+        });
+
+        const event = new window.Event('submit');
+        form.dispatchEvent(event);
+
+        expect(fetch).toHaveBeenCalledWith('/api/customers/import', {
+            method: 'POST',
+            body: expect.any(FormData)
+        });
+    });
+
+    test('setupCustomerImportForm handles import error correctly', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: false,
+            json: () => Promise.resolve({ error: 'Import failed' })
+        });
+
+        require('../static/js/main.js');
+        
+        const form = document.getElementById('importCustomersForm');
+        const fileInput = document.getElementById('customerExcelFile');
+        
+        Object.defineProperty(fileInput, 'files', {
+            value: [new File([''], 'customers.xlsx')]
+        });
+
+        const event = new window.Event('submit');
+        form.dispatchEvent(event);
+
+        await new Promise(process.nextTick);
+        expect(alert).toHaveBeenCalledWith(expect.stringContaining('Error'));
+    });
+});

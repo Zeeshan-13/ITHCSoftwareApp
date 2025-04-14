@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSoftwareList();
     setupForm();
     setupImportForm();
+    setupCustomerImportForm();
+    setupProjectImportForm();
     setupSoftwareSearch();
 });
 
@@ -116,6 +118,104 @@ function setupImportForm() {
         } catch (error) {
             console.error('Error:', error);
             alert('Error importing software');
+        }
+    });
+}
+
+function setupCustomerImportForm() {
+    const form = document.getElementById('importCustomersForm');
+    if (!form) {
+        console.error('Customer import form not found');
+        return;
+    }
+
+    console.log('Setting up customer import form handler');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log('Customer import form submitted');
+        
+        const fileInput = document.getElementById('customerExcelFile');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert('Please select a file');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            console.log('Sending POST request to /api/customers/import');
+            const response = await fetch('/api/customers/import', {
+                method: 'POST',
+                body: formData
+            });
+
+            console.log('Import response status:', response.status);
+            const result = await response.json();
+            console.log('Import response:', result);
+
+            if (response.ok) {
+                alert(`Successfully imported ${result.imported} customers and updated ${result.updated} existing customers`);
+                form.reset();
+            } else {
+                alert(result.error || 'Error importing customers');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error importing customers: ' + error.message);
+        }
+    });
+}
+
+function setupProjectImportForm() {
+    const form = document.getElementById('importProjectsForm');
+    if (!form) {
+        console.error('Project import form not found');
+        return;
+    }
+
+    console.log('Setting up project import form handler');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log('Project import form submitted');
+        
+        const fileInput = document.getElementById('projectExcelFile');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert('Please select a file');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            console.log('Sending POST request to /api/projects/import');
+            const response = await fetch('/api/projects/import', {
+                method: 'POST',
+                body: formData
+            });
+
+            console.log('Import response status:', response.status);
+            const result = await response.json();
+            console.log('Import response:', result);
+
+            if (response.ok) {
+                alert(`Successfully imported ${result.imported} projects, updated ${result.updated} existing projects, and skipped ${result.skipped} projects`);
+                form.reset();
+                // Refresh projects list if we're on the projects tab
+                if (document.querySelector('#projects.active')) {
+                    await loadProjectsList();
+                }
+            } else {
+                alert(result.error || 'Error importing projects');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error importing projects: ' + error.message);
         }
     });
 }

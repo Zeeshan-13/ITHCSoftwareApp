@@ -29,7 +29,7 @@ project_customer = db.Table('project_customer',
 
 class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False, unique=True)
+    name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     software_id = db.Column(db.Integer, db.ForeignKey('software.id'))
@@ -38,6 +38,10 @@ class Project(db.Model):
     releases = db.relationship('Release', backref='project', lazy=True)
     customers = db.relationship('Customer', secondary=project_customer, lazy='subquery',
         backref=db.backref('projects', lazy=True))
+    
+    __table_args__ = (
+        db.UniqueConstraint('name', 'software_version', name='unique_project_version'),
+    )
 
     def to_dict(self):
         return {
@@ -79,4 +83,30 @@ class Customer(db.Model):
             'name': self.name,
             'email': self.email,
             'contact_person': self.contact_person
+        }
+
+class ITHCSoftware(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    software_id = db.Column(db.Integer, db.ForeignKey('software.id'), nullable=False)
+    project_version = db.Column(db.String(50), nullable=False)
+    current_software_version = db.Column(db.String(50), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    project = db.relationship('Project', backref='ithc_software')
+    software = db.relationship('Software', backref='ithc_instances')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'project_id': self.project_id,
+            'project_version': self.project_version,
+            'software_id': self.software_id,
+            'current_software_version': self.current_software_version,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'project': self.project.to_dict() if self.project else None,
+            'software': self.software.to_dict() if self.software else None
         }

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h1>Utilities</h1>
+    
+    <div class="row">
+        <!-- Software Import -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Import Software</h5>
+                </div>
+                <div class="card-body">
+                    <form id="softwareImportForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="softwareFile" class="form-label">Select Excel File</label>
+                            <input type="file" class="form-control" id="softwareFile" name="file" accept=".xlsx,.xls" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Import Software</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects Import -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Import Projects</h5>
+                </div>
+                <div class="card-body">
+                    <form id="projectsImportForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="projectsFile" class="form-label">Select Excel File</label>
+                            <input type="file" class="form-control" id="projectsFile" name="file" accept=".xlsx,.xls" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Import Projects</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ITHC Import -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Import ITHC Data</h5>
+                </div>
+                <div class="card-body">
+                    <form id="ithcImportForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="ithcFile" class="form-label">Select Excel File</label>
+                            <input type="file" class="form-control" id="ithcFile" name="file" accept=".xlsx,.xls" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Import ITHC Data</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sample Templates Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Sample Templates</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-secondary w-100" id="downloadSoftwareTemplate">
+                                <i class="bi bi-download"></i> Software Template
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-secondary w-100" id="downloadProjectTemplate">
+                                <i class="bi bi-download"></i> Project Template
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-secondary w-100" id="downloadITHCTemplate">
+                                <i class="bi bi-download"></i> ITHC Template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/utilities.js') }}"></script>
+{% endblock %}

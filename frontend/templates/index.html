@@ -125,7 +125,7 @@
 <!-- Utilities Tab -->
 <div class="tab-pane fade" id="utilities" role="tabpanel">
     <div class="row mt-4">
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card">
                 <div class="card-body">
                     <h3 class="card-title">Import Software from Excel</h3>
@@ -138,6 +138,42 @@
                             </small>
                         </div>
                         <button type="submit" class="btn btn-primary">Import Software</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">Import Customers from Excel</h3>
+                    <form id="importCustomersForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="customerExcelFile" class="form-label">Select Excel File:</label>
+                            <input type="file" class="form-control" id="customerExcelFile" accept=".xlsx,.xls" required>
+                            <small class="form-text text-muted">
+                                Excel file should have headers: Name, Email, Contact Person
+                            </small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Import Customers</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">Import Projects from Excel</h3>
+                    <form id="importProjectsForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="projectExcelFile" class="form-label">Select Excel File:</label>
+                            <input type="file" class="form-control" id="projectExcelFile" accept=".xlsx,.xls" required>
+                            <small class="form-text text-muted">
+                                Excel file should have headers: Name, Description, Software Name, Software Version
+                            </small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Import Projects</button>
                     </form>
                 </div>
             </div>
