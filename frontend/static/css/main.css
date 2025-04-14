@@ -4,16 +4,21 @@
     padding: 0;
 }
 
+/* Base styles */
 body {
     font-family: Arial, sans-serif;
     line-height: 1.6;
     padding: 20px;
-    background-color: #f4f4f4;
+    background-color: #f8f9fa;
 }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
+}
+
+.container-fluid {
+    max-width: 1800px;
 }
 
 h1, h2 {
@@ -100,17 +105,61 @@ th {
     background: #444;
 }
 
+/* Tab styles */
+.nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.nav-tabs .nav-link {
+    margin-bottom: -2px;
+    border: none;
+    color: #495057;
+    padding: 12px 20px;
+}
+
+.nav-tabs .nav-link:hover {
+    border: none;
+    color: #007bff;
+}
+
+.nav-tabs .nav-link.active {
+    color: #007bff;
+    background-color: transparent;
+    border-bottom: 2px solid #007bff;
+}
+
+/* Card styles */
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,.05);
+    margin-bottom: 20px;
+}
+
+.card-body {
+    padding: 25px;
+}
+
+.card-title {
+    color: #495057;
+    font-size: 1.25rem;
+    margin-bottom: 20px;
+}
+
 .project-card {
     background: white;
+    border-radius: 8px;
     padding: 20px;
     margin-bottom: 20px;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.project-card:hover {
+    transform: translateY(-2px);
 }
 
 .releases-section, .customers-section {
-    margin-top: 15px;
-    padding-top: 15px;
+    margin-top: 20px;
+    padding-top: 20px;
     border-top: 1px solid #eee;
 }
 
@@ -124,8 +173,10 @@ th {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 5px 0;
-    border-bottom: 1px solid #eee;
+    padding: 10px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
 }
 
 .add-release-form, .add-customer-to-project {
@@ -178,11 +229,88 @@ select {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
+/* Form styles */
+.form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.form-control {
+    border: 1px solid #dee2e6;
+    padding: 10px;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.15);
+}
+
+.btn-primary {
+    padding: 10px 20px;
+    font-weight: 500;
+}
+
+/* Table styles */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+    background-color: #f8f9fa;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Search box */
+.search-box {
+    width: 300px;
+}
+
+.search-box .form-control {
+    padding-right: 30px;
+}
+
+/* Utility styles */
 .text-muted {
-    color: #6c757d;
+    color: #6c757d !important;
     font-size: 0.875em;
     margin-top: 5px;
     display: block;
+}
+
+/* Button groups */
+.btn-group {
+    gap: 5px;
+}
+
+.btn-group .btn {
+    padding: 6px 12px;
+}
+
+/* Icons */
+.bi {
+    font-size: 1.1rem;
+    vertical-align: -2px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .search-box {
+        width: 100%;
+        margin-top: 15px;
+    }
+    
+    .card-body {
+        padding: 15px;
+    }
 }
 
 input[type="file"] {

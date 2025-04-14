@@ -1,59 +1,146 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container">
-    <h1>Software Management System</h1>
-    
-    <div class="import-software-form">
-        <h2>Import Software from Excel</h2>
-        <form id="importForm" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="excelFile">Select Excel File:</label>
-                <input type="file" id="excelFile" accept=".xlsx,.xls" required>
-                <small class="form-text text-muted">Excel file should have headers: Software, Type, Last Updated, Latest Version, URL</small>
+<!-- Software Tab -->
+<div class="tab-pane fade show active" id="software" role="tabpanel">
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">Add New Software</h3>
+                    <form id="softwareForm">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Software Name:</label>
+                            <input type="text" class="form-control" id="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="software_type" class="form-label">Software Type:</label>
+                            <input type="text" class="form-control" id="software_type" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="latest_version" class="form-label">Latest Version:</label>
+                            <input type="text" class="form-control" id="latest_version" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="check_url" class="form-label">URL for Software Check:</label>
+                            <input type="url" class="form-control" id="check_url" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Software</button>
+                    </form>
+                </div>
             </div>
-            <button type="submit">Import Software</button>
-        </form>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="card-title">Software List</h3>
+                        <div class="search-box">
+                            <input type="text" class="form-control" id="softwareSearch" placeholder="Search software...">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Latest Version</th>
+                                    <th>Last Updated</th>
+                                    <th>Check URL</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="softwareTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+</div>
 
-    <div class="add-software-form">
-        <h2>Add New Software</h2>
-        <form id="softwareForm">
-            <div class="form-group">
-                <label for="name">Software Name:</label>
-                <input type="text" id="name" required>
+<!-- Projects Tab -->
+<div class="tab-pane fade" id="projects" role="tabpanel">
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">Add New Project</h3>
+                    <form id="projectForm">
+                        <div class="mb-3">
+                            <label for="projectName" class="form-label">Project Name:</label>
+                            <input type="text" class="form-control" id="projectName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="projectDescription" class="form-label">Description:</label>
+                            <textarea class="form-control" id="projectDescription" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Project</button>
+                    </form>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="software_type">Software Type:</label>
-                <input type="text" id="software_type" required>
+            
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h3 class="card-title">Add New Customer</h3>
+                    <form id="customerForm">
+                        <div class="mb-3">
+                            <label for="customerName" class="form-label">Customer Name:</label>
+                            <input type="text" class="form-control" id="customerName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="customerEmail" class="form-label">Email:</label>
+                            <input type="email" class="form-control" id="customerEmail">
+                        </div>
+                        <div class="mb-3">
+                            <label for="contactPerson" class="form-label">Contact Person:</label>
+                            <input type="text" class="form-control" id="contactPerson">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Customer</button>
+                    </form>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="latest_version">Latest Version:</label>
-                <input type="text" id="latest_version" required>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="card-title">Projects List</h3>
+                        <div class="search-box">
+                            <input type="text" class="form-control" id="projectSearch" placeholder="Search projects...">
+                        </div>
+                    </div>
+                    <div id="projectsList">
+                        <!-- Projects will be dynamically inserted here -->
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="check_url">URL for Software Check:</label>
-                <input type="url" id="check_url" required>
-            </div>
-            <button type="submit">Add Software</button>
-        </form>
+        </div>
     </div>
+</div>
 
-    <div class="software-list">
-        <h2>Software List</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Latest Version</th>
-                    <th>Last Updated</th>
-                    <th>Check URL</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="softwareTableBody">
-            </tbody>
-        </table>
+<!-- Utilities Tab -->
+<div class="tab-pane fade" id="utilities" role="tabpanel">
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">Import Software from Excel</h3>
+                    <form id="importForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="excelFile" class="form-label">Select Excel File:</label>
+                            <input type="file" class="form-control" id="excelFile" accept=".xlsx,.xls" required>
+                            <small class="form-text text-muted">
+                                Excel file should have headers: Software, Type, Last Updated, Latest Version, URL
+                            </small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Import Software</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

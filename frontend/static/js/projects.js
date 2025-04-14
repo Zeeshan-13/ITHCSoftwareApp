@@ -1,7 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-    loadProjects();
+    loadProjectsList();
     setupProjectForm();
     setupCustomerForm();
+    setupSearch();
 });
 
 function setupProjectForm() {
@@ -25,7 +26,7 @@ function setupProjectForm() {
 
             if (response.ok) {
                 form.reset();
-                loadProjects();
+                loadProjectsList();
             } else {
                 alert('Error adding project');
             }
@@ -58,7 +59,7 @@ function setupCustomerForm() {
 
             if (response.ok) {
                 form.reset();
-                loadProjects(); // Refresh to show new customer in lists
+                loadProjectsList(); // Refresh to show new customer in lists
             } else {
                 alert('Error adding customer');
             }
@@ -69,7 +70,7 @@ function setupCustomerForm() {
     });
 }
 
-async function loadProjects() {
+async function loadProjectsList() {
     try {
         const [projectsResponse, customersResponse] = await Promise.all([
             fetch('/api/projects'),
@@ -91,21 +92,37 @@ function displayProjects(projects, customers) {
     projectsList.innerHTML = '';
 
     projects.forEach(project => {
-        const projectDiv = document.createElement('div');
-        projectDiv.className = 'project-card';
+        const projectCard = document.createElement('div');
+        projectCard.className = 'card project-card mb-4';
         
         const releasesList = project.releases.map(release => `
-            <li class="release-item">
-                ${release.version} (${new Date(release.release_date).toLocaleDateString()})
-                <button onclick="deleteRelease(${release.id})" class="delete-btn small">Delete</button>
-            </li>
+            <div class="release-item">
+                <span>
+                    <strong>${release.version}</strong>
+                    <span class="text-muted ms-2">${new Date(release.release_date).toLocaleDateString()}</span>
+                </span>
+                <div class="btn-group">
+                    <button onclick="editRelease(${project.id}, ${release.id})" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button onclick="deleteRelease(${release.id})" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
         `).join('');
 
         const customersList = project.customers.map(customer => `
-            <li class="customer-item">
-                ${customer.name}
-                <button onclick="removeCustomerFromProject(${project.id}, ${customer.id})" class="delete-btn small">Remove</button>
-            </li>
+            <div class="customer-item">
+                <span>
+                    <strong>${customer.name}</strong>
+                    ${customer.email ? `<span class="text-muted ms-2">${customer.email}</span>` : ''}
+                </span>
+                <button onclick="removeCustomerFromProject(${project.id}, ${customer.id})" 
+                    class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
         `).join('');
 
         const availableCustomers = customers.filter(customer => 
@@ -116,37 +133,81 @@ function displayProjects(projects, customers) {
             `<option value="${customer.id}">${customer.name}</option>`
         ).join('');
 
-        projectDiv.innerHTML = `
-            <h3>${project.name}</h3>
-            <p>${project.description || 'No description'}</p>
-            
-            <div class="releases-section">
-                <h4>Releases</h4>
-                <ul class="releases-list">${releasesList}</ul>
-                <div class="add-release-form">
-                    <input type="text" id="version-${project.id}" placeholder="Version number">
-                    <textarea id="notes-${project.id}" placeholder="Release notes"></textarea>
-                    <button onclick="addRelease(${project.id})">Add Release</button>
+        projectCard.innerHTML = `
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h4 class="card-title mb-1">${project.name}</h4>
+                        <p class="text-muted">${project.description || 'No description'}</p>
+                    </div>
+                    <div class="btn-group">
+                        <button onclick="editProject(${project.id})" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button onclick="deleteProject(${project.id})" class="btn btn-outline-danger">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="releases-section">
+                    <h5 class="mb-3">
+                        <i class="bi bi-tags me-2"></i>
+                        Releases
+                    </h5>
+                    <div class="releases-list mb-3">
+                        ${releasesList || '<p class="text-muted">No releases yet</p>'}
+                    </div>
+                    <div class="add-release-form">
+                        <input type="text" class="form-control" id="version-${project.id}" 
+                            placeholder="Version number">
+                        <textarea class="form-control" id="notes-${project.id}" 
+                            placeholder="Release notes"></textarea>
+                        <button onclick="addRelease(${project.id})" class="btn btn-primary">
+                            Add Release
+                        </button>
+                    </div>
+                </div>
+
+                <div class="customers-section">
+                    <h5 class="mb-3">
+                        <i class="bi bi-people me-2"></i>
+                        Customers
+                    </h5>
+                    <div class="customers-list mb-3">
+                        ${customersList || '<p class="text-muted">No customers assigned</p>'}
+                    </div>
+                    <div class="add-customer-to-project">
+                        <select class="form-select" id="customer-select-${project.id}">
+                            <option value="">Select customer...</option>
+                            ${customerOptions}
+                        </select>
+                        <button onclick="addCustomerToProject(${project.id})" 
+                            class="btn btn-primary">
+                            Add Customer
+                        </button>
+                    </div>
                 </div>
             </div>
-
-            <div class="customers-section">
-                <h4>Customers</h4>
-                <ul class="customers-list">${customersList}</ul>
-                <div class="add-customer-to-project">
-                    <select id="customer-select-${project.id}">
-                        <option value="">Select customer...</option>
-                        ${customerOptions}
-                    </select>
-                    <button onclick="addCustomerToProject(${project.id})">Add Customer to Project</button>
-                </div>
-            </div>
-
-            <button onclick="deleteProject(${project.id})" class="delete-btn">Delete Project</button>
         `;
         
-        projectsList.appendChild(projectDiv);
+        projectsList.appendChild(projectCard);
     });
+}
+
+function setupSearch() {
+    const projectSearch = document.getElementById('projectSearch');
+    if (projectSearch) {
+        projectSearch.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const projectCards = document.querySelectorAll('.project-card');
+            
+            projectCards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+    }
 }
 
 async function addRelease(projectId) {
@@ -168,7 +229,7 @@ async function addRelease(projectId) {
         });
 
         if (response.ok) {
-            loadProjects();
+            loadProjectsList();
         } else {
             alert('Error adding release');
         }
@@ -189,7 +250,7 @@ async function deleteRelease(releaseId) {
         });
 
         if (response.ok) {
-            loadProjects();
+            loadProjectsList();
         } else {
             alert('Error deleting release');
         }
@@ -214,7 +275,7 @@ async function addCustomerToProject(projectId) {
         });
 
         if (response.ok) {
-            loadProjects();
+            loadProjectsList();
         } else {
             alert('Error adding customer to project');
         }
@@ -235,7 +296,7 @@ async function removeCustomerFromProject(projectId, customerId) {
         });
 
         if (response.ok) {
-            loadProjects();
+            loadProjectsList();
         } else {
             alert('Error removing customer from project');
         }
@@ -256,7 +317,7 @@ async function deleteProject(projectId) {
         });
 
         if (response.ok) {
-            loadProjects();
+            loadProjectsList();
         } else {
             alert('Error deleting project');
         }
@@ -264,4 +325,14 @@ async function deleteProject(projectId) {
         console.error('Error:', error);
         alert('Error deleting project');
     }
+}
+
+function editProject(id) {
+    // TODO: Implement edit functionality
+    console.log('Edit project:', id);
+}
+
+function editRelease(projectId, releaseId) {
+    // TODO: Implement edit functionality
+    console.log('Edit release:', releaseId, 'for project:', projectId);
 }
