@@ -1,22 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('Document loaded, initializing app...');
     loadSoftwareList();
-    loadProjectsList();
     setupForm();
     setupImportForm();
-    setupSearch();
+    setupSoftwareSearch();
 });
 
-function setupSearch() {
+function setupSoftwareSearch() {
     const softwareSearch = document.getElementById('softwareSearch');
-    const projectSearch = document.getElementById('projectSearch');
-
-    softwareSearch?.addEventListener('input', (e) => {
-        filterSoftwareList(e.target.value.toLowerCase());
-    });
-
-    projectSearch?.addEventListener('input', (e) => {
-        filterProjectsList(e.target.value.toLowerCase());
-    });
+    if (softwareSearch) {
+        softwareSearch.addEventListener('input', (e) => {
+            filterSoftwareList(e.target.value.toLowerCase());
+        });
+    }
 }
 
 function filterSoftwareList(searchTerm) {
@@ -27,44 +23,61 @@ function filterSoftwareList(searchTerm) {
     });
 }
 
-function filterProjectsList(searchTerm) {
-    const cards = document.querySelectorAll('.project-card');
-    cards.forEach(card => {
-        const text = card.textContent.toLowerCase();
-        card.style.display = text.includes(searchTerm) ? '' : 'none';
-    });
-}
-
 function setupForm() {
     const form = document.getElementById('softwareForm');
+    if (!form) {
+        console.error('Software form not found in the DOM');
+        return;
+    }
+
+    console.log('Setting up software form handler');
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        const softwareData = {
-            name: document.getElementById('name').value,
-            software_type: document.getElementById('software_type').value,
-            latest_version: document.getElementById('latest_version').value,
-            check_url: document.getElementById('check_url').value
+        console.log('Form submitted');
+
+        // Get form data
+        const formData = {
+            name: document.getElementById('name')?.value?.trim(),
+            software_type: document.getElementById('software_type')?.value?.trim(),
+            latest_version: document.getElementById('latest_version')?.value?.trim(),
+            check_url: document.getElementById('check_url')?.value?.trim()
         };
 
+        console.log('Form data:', formData);
+
+        // Validate required fields
+        if (!formData.name || !formData.software_type || !formData.latest_version) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
         try {
+            console.log('Sending POST request to /api/software');
             const response = await fetch('/api/software', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
-                body: JSON.stringify(softwareData)
+                body: JSON.stringify(formData)
             });
+
+            console.log('Response status:', response.status);
+            console.log('Response headers:', [...response.headers.entries()]);
+            
+            const data = await response.json();
+            console.log('Response data:', data);
 
             if (response.ok) {
                 form.reset();
-                loadSoftwareList();
+                await loadSoftwareList();
+                alert('Software added successfully');
             } else {
-                alert('Error adding software');
+                alert('Error adding software: ' + (data.error || 'Unknown error'));
             }
         } catch (error) {
-            console.error('Error:', error);
-            alert('Error adding software');
+            console.error('Error submitting form:', error);
+            alert('Error adding software: ' + error.message);
         }
     });
 }
@@ -109,27 +122,42 @@ function setupImportForm() {
 
 async function loadSoftwareList() {
     try {
+        console.log('Fetching software list...');
         const response = await fetch('/api/software');
+        console.log('Software list response status:', response.status);
         const software = await response.json();
+        console.log('Received software list:', software);
         displaySoftware(software);
     } catch (error) {
-        console.error('Error:', error);
-        alert('Error loading software list');
+        console.error('Error loading software list:', error);
+        alert('Error loading software list: ' + error.message);
     }
 }
 
 function displaySoftware(softwareList) {
+    console.log('Displaying software list:', softwareList);
     const tbody = document.getElementById('softwareTableBody');
+    if (!tbody) {
+        console.error('Could not find softwareTableBody element');
+        return;
+    }
     tbody.innerHTML = '';
+
+    if (softwareList.length === 0) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = '<td colspan="6" class="text-center">No software entries found</td>';
+        tbody.appendChild(emptyRow);
+        return;
+    }
 
     softwareList.forEach(software => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${software.name}</td>
-            <td>${software.software_type}</td>
-            <td>${software.latest_version}</td>
-            <td>${new Date(software.last_updated).toLocaleString()}</td>
-            <td><a href="${software.check_url}" target="_blank" class="text-decoration-none">${software.check_url}</a></td>
+            <td>${software.name || ''}</td>
+            <td>${software.software_type || ''}</td>
+            <td>${software.latest_version || ''}</td>
+            <td>${software.last_updated ? new Date(software.last_updated).toLocaleString() : ''}</td>
+            <td>${software.check_url ? `<a href="${software.check_url}" target="_blank" class="text-decoration-none">${software.check_url}</a>` : ''}</td>
             <td>
                 <div class="btn-group">
                     <button onclick="editSoftware(${software.id})" class="btn btn-sm btn-outline-primary">

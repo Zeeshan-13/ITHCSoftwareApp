@@ -32,6 +32,9 @@ class Project(db.Model):
     name = db.Column(db.String(100), nullable=False, unique=True)
     description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    software_id = db.Column(db.Integer, db.ForeignKey('software.id'))
+    software_version = db.Column(db.String(50))
+    software = db.relationship('Software', backref='projects')
     releases = db.relationship('Release', backref='project', lazy=True)
     customers = db.relationship('Customer', secondary=project_customer, lazy='subquery',
         backref=db.backref('projects', lazy=True))
@@ -41,7 +44,9 @@ class Project(db.Model):
             'id': self.id,
             'name': self.name,
             'description': self.description,
-            'created_at': self.created_at.isoformat(),
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'software': self.software.to_dict() if self.software else None,
+            'software_version': self.software_version,
             'releases': [release.to_dict() for release in self.releases],
             'customers': [customer.to_dict() for customer in self.customers]
         }

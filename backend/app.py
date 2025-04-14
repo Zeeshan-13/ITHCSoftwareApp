@@ -11,17 +11,26 @@ def create_app(config_name='development'):
         template_folder='../frontend/templates',
         static_folder='../frontend/static')
 
+    # Configure database path
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'software.db')
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+
     if config_name == 'testing':
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         app.config['TESTING'] = True
     else:
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///software.db'
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
     
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+    # Enable debugging
+    app.debug = True
+
+    # Database initialization
     db.init_app(app)
     migrate = Migrate(app, db)
 
+    # Create tables only if they don't exist
     with app.app_context():
         db.create_all()
 
@@ -34,6 +43,27 @@ def create_app(config_name='development'):
 
     def allowed_file(filename):
         return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+    @app.before_request
+    def log_request_info():
+        app.logger.debug('Headers: %s', request.headers)
+        app.logger.debug('Body: %s', request.get_data())
+
+    @app.after_request
+    def after_request(response):
+        # Add CORS headers
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+        
+        # Only log response data for non-static files
+        if not request.path.startswith('/static/'):
+            try:
+                app.logger.debug('Response: %s', response.get_data())
+            except RuntimeError:
+                app.logger.debug('Response: [Binary content]')
+        
+        return response
 
     @app.route('/')
     def index():
@@ -55,26 +85,38 @@ def create_app(config_name='development'):
 
     @app.route('/api/software', methods=['POST'])
     def add_software():
-        data = request.json
-        required_fields = ['name', 'software_type', 'latest_version']
-        for field in required_fields:
-            if field not in data or not data[field]:
-                return jsonify({'error': f'Missing required field: {field}'}), 400
+        try:
+            data = request.json
+            print("Received software data:", data)  # Debug log
+            
+            required_fields = ['name', 'software_type', 'latest_version']
+            for field in required_fields:
+                if field not in data or not data[field]:
+                    print(f"Missing required field: {field}")  # Debug log
+                    return jsonify({'error': f'Missing required field: {field}'}), 400
 
-        # Check for duplicate name first
-        existing = Software.query.filter_by(name=data['name']).first()
-        if existing:
-            return jsonify({'error': 'Software with this name already exists'}), 400
+            # Check for duplicate name first
+            existing = Software.query.filter_by(name=data['name']).first()
+            if existing:
+                print(f"Duplicate software name: {data['name']}")  # Debug log
+                return jsonify({'error': 'Software with this name already exists'}), 400
 
-        new_software = Software(
-            name=data['name'],
-            software_type=data['software_type'],
-            latest_version=data['latest_version'],
-            check_url=data.get('check_url', '')
-        )
-        db.session.add(new_software)
-        db.session.commit()
-        return jsonify(new_software.to_dict()), 201
+            new_software = Software(
+                name=data['name'],
+                software_type=data['software_type'],
+                latest_version=data['latest_version'],
+                check_url=data.get('check_url', ''),
+                last_updated=datetime.utcnow()
+            )
+            db.session.add(new_software)
+            db.session.commit()
+            print("Successfully added software:", new_software.to_dict())  # Debug log
+            return jsonify(new_software.to_dict()), 201
+            
+        except Exception as e:
+            print("Error adding software:", str(e))  # Debug log
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
 
     @app.route('/api/software/<int:id>', methods=['PUT'])
     def update_software(id):
@@ -181,31 +223,55 @@ def create_app(config_name='development'):
 
     @app.route('/api/projects', methods=['POST'])
     def add_project():
-        data = request.json
-        if 'name' not in data or not data['name']:
-            return jsonify({'error': 'Name is required'}), 400
+        try:
+            data = request.json
+            print("Received project data:", data)  # Debug log
+            
+            if 'name' not in data or not data['name']:
+                return jsonify({'error': 'Name is required'}), 400
 
-        # Check for duplicate name first
-        existing = Project.query.filter_by(name=data['name']).first()
-        if existing:
-            return jsonify({'error': 'Project with this name already exists'}), 400
+            # Check for duplicate name first
+            existing = Project.query.filter_by(name=data['name']).first()
+            if existing:
+                return jsonify({'error': 'Project with this name already exists'}), 400
 
-        new_project = Project(
-            name=data['name'],
-            description=data.get('description', '')
-        )
-        db.session.add(new_project)
-        db.session.commit()
-        return jsonify(new_project.to_dict()), 201
+            new_project = Project(
+                name=data['name'],
+                description=data.get('description', ''),
+                software_id=data.get('software_id'),
+                software_version=data.get('software_version')
+            )
+            
+            db.session.add(new_project)
+            db.session.commit()
+            print("Successfully added project:", new_project.to_dict())  # Debug log
+            return jsonify(new_project.to_dict()), 201
+            
+        except Exception as e:
+            print("Error adding project:", str(e))  # Debug log
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
 
     @app.route('/api/projects/<int:id>', methods=['PUT'])
     def update_project(id):
-        project = Project.query.get_or_404(id)
-        data = request.json
-        project.name = data.get('name', project.name)
-        project.description = data.get('description', project.description)
-        db.session.commit()
-        return jsonify(project.to_dict())
+        try:
+            project = Project.query.get_or_404(id)
+            data = request.json
+            
+            project.name = data.get('name', project.name)
+            project.description = data.get('description', project.description)
+            if 'software_id' in data:
+                project.software_id = data['software_id']
+            if 'software_version' in data:
+                project.software_version = data['software_version']
+            
+            db.session.commit()
+            return jsonify(project.to_dict())
+            
+        except Exception as e:
+            print("Error updating project:", str(e))
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
 
     @app.route('/api/projects/<int:id>', methods=['DELETE'])
     def delete_project(id):
