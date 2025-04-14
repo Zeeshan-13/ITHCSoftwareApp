@@ -3,6 +3,18 @@
 <div class="container">
     <h1>Software Management System</h1>
     
+    <div class="import-software-form">
+        <h2>Import Software from Excel</h2>
+        <form id="importForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="excelFile">Select Excel File:</label>
+                <input type="file" id="excelFile" accept=".xlsx,.xls" required>
+                <small class="form-text text-muted">Excel file should have headers: Software, Type, Last Updated, Latest Version, URL</small>
+            </div>
+            <button type="submit">Import Software</button>
+        </form>
+    </div>
+
     <div class="add-software-form">
         <h2>Add New Software</h2>
         <form id="softwareForm">

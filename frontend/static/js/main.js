@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     loadSoftwareList();
     setupForm();
+    setupImportForm();
 });
 
 function setupForm() {
@@ -33,6 +34,44 @@ function setupForm() {
         } catch (error) {
             console.error('Error:', error);
             alert('Error adding software');
+        }
+    });
+}
+
+function setupImportForm() {
+    const form = document.getElementById('importForm');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const fileInput = document.getElementById('excelFile');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert('Please select a file');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/api/software/import', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert(`Successfully imported ${result.imported} software entries`);
+                form.reset();
+                loadSoftwareList();
+            } else {
+                alert(result.error || 'Error importing software');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error importing software');
         }
     });
 }

@@ -7,7 +7,16 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 <body>
+    <nav class="main-nav">
+        <div class="container">
+            <a href="{{ url_for('index') }}" class="nav-link">Software</a>
+            <a href="{{ url_for('projects') }}" class="nav-link">Projects</a>
+        </div>
+    </nav>
     {% block content %}{% endblock %}
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% if request.endpoint == 'projects' %}
+    <script src="{{ url_for('static', filename='js/projects.js') }}"></script>
+    {% endif %}
 </body>
 </html>
