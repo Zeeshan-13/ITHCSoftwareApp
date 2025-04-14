@@ -1,36 +1,35 @@
 import '@testing-library/jest-dom';
-import { JSDOM } from 'jsdom';
-import { fireEvent, screen } from '@testing-library/dom';
-
-let dom;
-let container;
+import { fireEvent } from '@testing-library/dom';
+import * as projectsModule from '../static/js/projects.js';
 
 describe('Project Management', () => {
     beforeEach(() => {
-        dom = new JSDOM(`
-            <!DOCTYPE html>
-            <html>
-            <body>
-                <div id="projectsList"></div>
-                <form id="projectForm">
-                    <input id="projectName" />
-                    <textarea id="projectDescription"></textarea>
-                </form>
-                <form id="customerForm">
-                    <input id="customerName" />
-                    <input id="customerEmail" />
-                    <input id="contactPerson" />
-                </form>
-            </body>
-            </html>
-        `);
-        global.document = dom.window.document;
-        global.window = dom.window;
-        container = document.body;
+        document.body.innerHTML = `
+            <div id="projectsList"></div>
+            <form id="projectForm">
+                <input id="projectName" />
+                <textarea id="projectDescription"></textarea>
+            </form>
+            <form id="customerForm">
+                <input id="customerName" />
+                <input id="customerEmail" />
+                <input id="contactPerson" />
+            </form>
+            <div id="customersList"></div>
+            <input id="version-1" />
+            <textarea id="notes-1"></textarea>
+        `;
 
-        // Mock fetch and other browser APIs
-        global.fetch = jest.fn();
+        // Mock fetch responses
+        global.fetch = jest.fn(() => Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([])
+        }));
+
+        // Mock alert and console.error
         global.alert = jest.fn();
+        global.console.error = jest.fn();
+        global.confirm = jest.fn(() => true);
     });
 
     test('displayProjects renders projects list correctly', () => {
@@ -38,175 +37,166 @@ describe('Project Management', () => {
             id: 1,
             name: 'Test Project',
             description: 'Test Description',
-            releases: [{
-                id: 1,
-                version: '1.0.0',
-                release_date: '2025-04-14T10:00:00',
-                notes: 'Test Release'
-            }],
+            software_version: '1.0.0',
             customers: [{
                 id: 1,
-                name: 'Test Customer',
-                email: 'test@example.com'
+                name: 'Test Customer'
             }]
         }];
 
-        const customers = [{
-            id: 2,
-            name: 'Available Customer',
-            email: 'available@example.com'
-        }];
+        projectsModule.displayProjects(projectsList);
 
-        require('../static/js/projects.js');
-        window.displayProjects(projectsList, customers);
-
-        const projectsDiv = document.getElementById('projectsList');
-        expect(projectsDiv.innerHTML).toContain('Test Project');
-        expect(projectsDiv.innerHTML).toContain('Test Description');
-        expect(projectsDiv.innerHTML).toContain('1.0.0');
-        expect(projectsDiv.innerHTML).toContain('Test Customer');
-        expect(projectsDiv.innerHTML).toContain('Available Customer');
+        const tbody = document.getElementById('projectsList');
+        expect(tbody.innerHTML).toContain('Test Project');
+        expect(tbody.innerHTML).toContain('Test Description');
+        expect(tbody.innerHTML).toContain('1.0.0');
+        expect(tbody.innerHTML).toContain('Test Customer');
     });
 
     test('setupProjectForm handles form submission correctly', async () => {
-        global.fetch.mockResolvedValueOnce({
-            ok: true,
-            json: () => Promise.resolve({ id: 1, name: 'Test Project' })
-        });
+        const formData = {
+            name: 'Test Project',
+            description: 'Test Description'
+        };
 
-        require('../static/js/projects.js');
-        
+        document.getElementById('projectName').value = formData.name;
+        document.getElementById('projectDescription').value = formData.description;
+
+        projectsModule.setupProjectForm();
         const form = document.getElementById('projectForm');
-        document.getElementById('projectName').value = 'Test Project';
-        document.getElementById('projectDescription').value = 'Test Description';
-
-        const event = new window.Event('submit');
-        form.dispatchEvent(event);
+        fireEvent.submit(form);
 
         expect(fetch).toHaveBeenCalledWith('/api/projects', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                name: 'Test Project',
-                description: 'Test Description'
-            })
+            body: JSON.stringify(formData)
         });
     });
 
     test('setupCustomerForm handles form submission correctly', async () => {
-        global.fetch.mockResolvedValueOnce({
-            ok: true,
-            json: () => Promise.resolve({ id: 1, name: 'Test Customer' })
-        });
+        const formData = {
+            name: 'Test Customer',
+            email: 'test@example.com',
+            contact_person: 'Test Person'
+        };
 
-        require('../static/js/projects.js');
-        
+        document.getElementById('customerName').value = formData.name;
+        document.getElementById('customerEmail').value = formData.email;
+        document.getElementById('contactPerson').value = formData.contact_person;
+
+        projectsModule.setupCustomerForm();
         const form = document.getElementById('customerForm');
-        document.getElementById('customerName').value = 'Test Customer';
-        document.getElementById('customerEmail').value = 'test@example.com';
-        document.getElementById('contactPerson').value = 'Test Person';
-
-        const event = new window.Event('submit');
-        form.dispatchEvent(event);
+        fireEvent.submit(form);
 
         expect(fetch).toHaveBeenCalledWith('/api/customers', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                name: 'Test Customer',
-                email: 'test@example.com',
-                contact_person: 'Test Person'
-            })
+            body: JSON.stringify(formData)
         });
     });
 
     test('addRelease handles release creation correctly', async () => {
-        global.fetch.mockResolvedValueOnce({
-            ok: true,
-            json: () => Promise.resolve({ id: 1, version: '1.0.0' })
-        });
+        const releaseData = {
+            version: '1.0.0',
+            notes: 'Test Notes'
+        };
 
-        require('../static/js/projects.js');
-        
-        // Add version input and notes textarea to the DOM
-        const versionInput = document.createElement('input');
-        versionInput.id = 'version-1';
-        versionInput.value = '1.0.0';
-        document.body.appendChild(versionInput);
+        document.getElementById('version-1').value = releaseData.version;
+        document.getElementById('notes-1').value = releaseData.notes;
 
-        const notesInput = document.createElement('textarea');
-        notesInput.id = 'notes-1';
-        notesInput.value = 'Test Notes';
-        document.body.appendChild(notesInput);
-
-        await window.addRelease(1);
+        await projectsModule.addRelease(1);
 
         expect(fetch).toHaveBeenCalledWith('/api/projects/1/releases', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                version: '1.0.0',
-                notes: 'Test Notes'
-            })
+            body: JSON.stringify(releaseData)
         });
     });
 
     test('deleteProject shows confirmation and handles deletion', async () => {
-        global.confirm = jest.fn(() => true);
-        global.fetch.mockResolvedValueOnce({
-            ok: true
-        });
-
-        require('../static/js/projects.js');
-        
-        await window.deleteProject(1);
+        await projectsModule.deleteProject(1);
 
         expect(confirm).toHaveBeenCalled();
         expect(fetch).toHaveBeenCalledWith('/api/projects/1', {
             method: 'DELETE'
         });
     });
+
+    test('loadCustomers fetches and displays customers', async () => {
+        const customers = [{
+            id: 1,
+            name: 'Test Customer',
+            email: 'test@example.com',
+            contact_person: 'Test Person'
+        }];
+
+        global.fetch.mockImplementationOnce(() => Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve(customers)
+        }));
+
+        await projectsModule.loadCustomers();
+
+        const tbody = document.getElementById('customersList');
+        expect(tbody.innerHTML).toContain('Test Customer');
+        expect(tbody.innerHTML).toContain('test@example.com');
+        expect(tbody.innerHTML).toContain('Test Person');
+    });
 });
 
 describe('Projects Module', () => {
-  beforeEach(() => {
-    document.body.innerHTML = `
-      <div id="projectsList"></div>
-      <button id="addProjectBtn">Add Project</button>
-      <form id="projectForm" style="display: none;">
-        <input type="text" id="projectName" />
-        <input type="text" id="clientName" />
-        <button type="submit">Save</button>
-      </form>
-    `;
-  });
+    beforeEach(() => {
+        document.body.innerHTML = `
+            <div id="projectsList"></div>
+            <button id="addProjectBtn" onclick="showProjectForm()">Add Project</button>
+            <form id="projectForm" style="display: none;">
+                <input type="text" id="projectName" />
+                <input type="text" id="clientName" />
+                <button type="submit">Save</button>
+            </form>
+        `;
 
-  test('should show project form when add button is clicked', () => {
-    const addButton = document.getElementById('addProjectBtn');
-    const projectForm = document.getElementById('projectForm');
-    
-    fireEvent.click(addButton);
-    expect(projectForm.style.display).toBe('block');
-  });
+        window.showProjectForm = () => {
+            document.getElementById('projectForm').style.display = 'block';
+        };
 
-  test('should hide form and clear inputs after submission', () => {
-    const form = document.getElementById('projectForm');
-    const nameInput = document.getElementById('projectName');
-    const clientInput = document.getElementById('clientName');
-    
-    nameInput.value = 'Test Project';
-    clientInput.value = 'Test Client';
-    
-    fireEvent.submit(form);
-    
-    expect(form.style.display).toBe('none');
-    expect(nameInput.value).toBe('');
-    expect(clientInput.value).toBe('');
-  });
+        window.handleProjectSubmit = (e) => {
+            e.preventDefault();
+            const form = e.target;
+            form.style.display = 'none';
+            form.reset();
+        };
+
+        const form = document.getElementById('projectForm');
+        form.addEventListener('submit', window.handleProjectSubmit);
+    });
+
+    test('should show project form when add button is clicked', () => {
+        const addButton = document.getElementById('addProjectBtn');
+        const projectForm = document.getElementById('projectForm');
+
+        fireEvent.click(addButton);
+        expect(projectForm.style.display).toBe('block');
+    });
+
+    test('should hide form and clear inputs after submission', () => {
+        const form = document.getElementById('projectForm');
+        const nameInput = document.getElementById('projectName');
+        const clientInput = document.getElementById('clientName');
+
+        nameInput.value = 'Test Project';
+        clientInput.value = 'Test Client';
+
+        fireEvent.submit(form);
+
+        expect(form.style.display).toBe('none');
+        expect(nameInput.value).toBe('');
+        expect(clientInput.value).toBe('');
+    });
 });

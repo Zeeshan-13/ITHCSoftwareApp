@@ -1,10 +1,12 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', initializeApp);
+
+function initializeApp() {
     if (document.getElementById('ithcForm')) {
         console.log('ITHC.js initialized');
         initializeITHC();
         setupEventListeners();
     }
-});
+}
 
 function initializeITHC() {
     loadProjects();
@@ -352,3 +354,21 @@ async function deleteITHC(id) {
         alert('Error deleting software version: ' + error.message);
     }
 }
+
+// Expose functions to global scope
+window.editITHC = editITHC;
+window.deleteITHC = deleteITHC;
+
+export {
+    loadProjects,
+    handleProjectChange,
+    saveITHC,
+    displayITHCList,
+    editITHC,
+    deleteITHC,
+    handleVersionChange,
+    handleSoftwareChange,
+    loadITHCList,
+    initializeITHC,
+    setupEventListeners
+};

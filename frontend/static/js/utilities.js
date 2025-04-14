@@ -1,3 +1,4 @@
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     setupImportForms();
     setupTemplateDownloads();
@@ -5,19 +6,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setupImportForms() {
     // Software Import
-    document.getElementById('softwareImportForm').addEventListener('submit', async (e) => {
+    document.getElementById('softwareImportForm')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         await handleImport(e.target, '/api/software/import', 'Software');
     });
 
     // Projects Import
-    document.getElementById('projectsImportForm').addEventListener('submit', async (e) => {
+    document.getElementById('projectsImportForm')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         await handleImport(e.target, '/api/projects/import', 'Projects');
     });
 
     // ITHC Import
-    document.getElementById('ithcImportForm').addEventListener('submit', async (e) => {
+    document.getElementById('ithcImportForm')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         await handleImport(e.target, '/api/ithc/software/import', 'ITHC');
     });
@@ -50,17 +51,17 @@ async function handleImport(form, url, type) {
 
 function setupTemplateDownloads() {
     // Software Template
-    document.getElementById('downloadSoftwareTemplate').addEventListener('click', () => {
+    document.getElementById('downloadSoftwareTemplate')?.addEventListener('click', () => {
         downloadTemplate('/api/templates/software', 'software_template.xlsx');
     });
 
     // Project Template
-    document.getElementById('downloadProjectTemplate').addEventListener('click', () => {
+    document.getElementById('downloadProjectTemplate')?.addEventListener('click', () => {
         downloadTemplate('/api/templates/project', 'project_template.xlsx');
     });
 
     // ITHC Template
-    document.getElementById('downloadITHCTemplate').addEventListener('click', () => {
+    document.getElementById('downloadITHCTemplate')?.addEventListener('click', () => {
         downloadTemplate('/api/templates/ithc', 'ithc_template.xlsx');
     });
 }
@@ -84,3 +85,11 @@ async function downloadTemplate(url, filename) {
         alert('Error downloading template: ' + error.message);
     }
 }
+
+// Export functions for testing
+export {
+    handleImport,
+    downloadTemplate,
+    setupImportForms,
+    setupTemplateDownloads
+};

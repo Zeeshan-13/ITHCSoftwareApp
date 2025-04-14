@@ -1,4 +1,7 @@
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize on DOM load
+document.addEventListener('DOMContentLoaded', initializeApp);
+
+function initializeApp() {
     console.log('Document loaded, initializing app...');
     loadSoftwareList();
     setupForm();
@@ -6,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCustomerImportForm();
     setupProjectImportForm();
     setupSoftwareSearch();
-});
+}
 
 function setupSoftwareSearch() {
     const softwareSearch = document.getElementById('softwareSearch');
@@ -273,9 +276,58 @@ function displaySoftware(softwareList) {
     });
 }
 
-function editSoftware(id) {
-    // TODO: Implement edit functionality
-    console.log('Edit software:', id);
+async function editSoftware(id) {
+    try {
+        const response = await fetch(`/api/software/${id}`);
+        const software = await response.json();
+        
+        // Fill form with existing data
+        document.getElementById('name').value = software.name;
+        document.getElementById('software_type').value = software.software_type;
+        document.getElementById('latest_version').value = software.latest_version;
+        document.getElementById('check_url').value = software.check_url || '';
+        
+        // Update form submit handler to handle edit
+        const form = document.getElementById('softwareForm');
+        const submitHandler = form.onsubmit;
+        
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('name').value.trim(),
+                software_type: document.getElementById('software_type').value.trim(),
+                latest_version: document.getElementById('latest_version').value.trim(),
+                check_url: document.getElementById('check_url').value.trim()
+            };
+            
+            try {
+                const response = await fetch(`/api/software/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok) {
+                    form.reset();
+                    form.onsubmit = submitHandler;  // Restore original submit handler
+                    await loadSoftwareList();
+                    alert('Software updated successfully');
+                } else {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to update software');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error updating software: ' + error.message);
+            }
+        };
+    } catch (error) {
+        console.error('Error loading software details:', error);
+        alert('Error loading software details: ' + error.message);
+    }
 }
 
 async function deleteSoftware(id) {
@@ -298,3 +350,20 @@ async function deleteSoftware(id) {
         alert('Error deleting software');
     }
 }
+
+// Expose functions to global scope
+window.editSoftware = editSoftware;
+window.deleteSoftware = deleteSoftware;
+
+export {
+    loadSoftwareList,
+    displaySoftware,
+    setupForm,
+    setupImportForm,
+    setupCustomerImportForm,
+    setupProjectImportForm,
+    setupSoftwareSearch,
+    filterSoftwareList,
+    deleteSoftware,
+    initializeApp
+};

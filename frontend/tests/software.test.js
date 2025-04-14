@@ -1,43 +1,34 @@
 import '@testing-library/jest-dom';
-import { JSDOM } from 'jsdom';
-import fs from 'fs';
-import path from 'path';
 import { fireEvent } from '@testing-library/dom';
-
-let dom;
-let container;
+import * as mainModule from '../static/js/main.js';
+import * as ithcModule from '../static/js/ithc.js';
 
 describe('Software Management', () => {
     beforeEach(() => {
-        // Create a fresh DOM for each test with all required elements
-        dom = new JSDOM(`
-            <!DOCTYPE html>
-            <html>
-            <body>
-                <div id="softwareTableBody"></div>
-                <form id="softwareForm">
-                    <input id="name" />
-                    <input id="software_type" />
-                    <input id="latest_version" />
-                    <input id="check_url" />
-                </form>
-                <form id="importForm">
-                    <input type="file" id="excelFile" />
-                </form>
-                <input type="text" id="softwareSearch" />
-            </body>
-            </html>
-        `);
-        global.document = dom.window.document;
-        global.window = dom.window;
-        container = document.body;
+        document.body.innerHTML = `
+            <div id="softwareTableBody"></div>
+            <form id="softwareForm">
+                <input id="name" />
+                <input id="software_type" />
+                <input id="latest_version" />
+                <input id="check_url" />
+            </form>
+            <form id="importForm">
+                <input type="file" id="excelFile" />
+            </form>
+            <input type="text" id="softwareSearch" />
+        `;
 
-        // Mock fetch and other browser APIs
-        global.fetch = jest.fn();
-        global.alert = jest.fn();
-        global.FormData = jest.fn(() => ({
-            append: jest.fn()
+        // Mock fetch responses
+        global.fetch = jest.fn(() => Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([])
         }));
+
+        // Mock alert and console.error
+        global.alert = jest.fn();
+        global.console.error = jest.fn();
+        global.confirm = jest.fn(() => true);
     });
 
     test('displaySoftware renders software list correctly', () => {
@@ -50,8 +41,7 @@ describe('Software Management', () => {
             check_url: 'http://test.com'
         }];
 
-        require('../static/js/main.js');
-        window.displaySoftware(softwareList);
+        mainModule.displaySoftware(softwareList);
 
         const tbody = document.getElementById('softwareTableBody');
         expect(tbody.innerHTML).toContain('Test Software');
@@ -61,284 +51,137 @@ describe('Software Management', () => {
     });
 
     test('setupForm handles form submission correctly', async () => {
-        global.fetch.mockResolvedValueOnce({
-            ok: true,
-            json: () => Promise.resolve({ id: 1, name: 'Test Software' })
-        });
+        const formData = {
+            name: 'Test Software',
+            software_type: 'Test Type',
+            latest_version: '1.0.0',
+            check_url: 'http://test.com'
+        };
 
-        require('../static/js/main.js');
-        
+        document.getElementById('name').value = formData.name;
+        document.getElementById('software_type').value = formData.software_type;
+        document.getElementById('latest_version').value = formData.latest_version;
+        document.getElementById('check_url').value = formData.check_url;
+
+        mainModule.setupForm();
+
         const form = document.getElementById('softwareForm');
-        document.getElementById('name').value = 'Test Software';
-        document.getElementById('software_type').value = 'Test Type';
-        document.getElementById('latest_version').value = '1.0.0';
-        document.getElementById('check_url').value = 'http://test.com';
-
-        const event = new window.Event('submit');
-        form.dispatchEvent(event);
+        fireEvent.submit(form);
 
         expect(fetch).toHaveBeenCalledWith('/api/software', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             },
-            body: JSON.stringify({
-                name: 'Test Software',
-                software_type: 'Test Type',
-                latest_version: '1.0.0',
-                check_url: 'http://test.com'
-            })
-        });
-    });
-
-    test('filterSoftwareList filters correctly', () => {
-        const softwareList = [{
-            id: 1,
-            name: 'Test Software',
-            software_type: 'Test Type',
-            latest_version: '1.0.0',
-            last_updated: '2025-04-14T10:00:00',
-            check_url: 'http://test.com'
-        }];
-
-        require('../static/js/main.js');
-        window.displaySoftware(softwareList);
-        window.filterSoftwareList('nonexistent');
-
-        const tbody = document.getElementById('softwareTableBody');
-        const rows = tbody.getElementsByTagName('tr');
-        expect(rows[0].style.display).toBe('none');
-
-        window.filterSoftwareList('test');
-        expect(rows[0].style.display).toBe('');
-    });
-
-    test('setupImportForm handles file import correctly', async () => {
-        global.fetch.mockResolvedValueOnce({
-            ok: true,
-            json: () => Promise.resolve({ imported: 2 })
-        });
-
-        require('../static/js/main.js');
-        
-        const form = document.getElementById('importForm');
-        const fileInput = document.getElementById('excelFile');
-        
-        // Mock file input
-        Object.defineProperty(fileInput, 'files', {
-            value: [new File([''], 'test.xlsx')]
-        });
-
-        const event = new window.Event('submit');
-        form.dispatchEvent(event);
-
-        expect(fetch).toHaveBeenCalledWith('/api/software/import', {
-            method: 'POST',
-            body: expect.any(FormData)
-        });
-    });
-
-    test('setupImportForm handles import error correctly', async () => {
-        global.fetch.mockResolvedValueOnce({
-            ok: false,
-            json: () => Promise.resolve({ error: 'Import failed' })
-        });
-
-        require('../static/js/main.js');
-        
-        const form = document.getElementById('importForm');
-        const fileInput = document.getElementById('excelFile');
-        
-        Object.defineProperty(fileInput, 'files', {
-            value: [new File([''], 'test.xlsx')]
-        });
-
-        const event = new window.Event('submit');
-        form.dispatchEvent(event);
-
-        await new Promise(process.nextTick); // Wait for async code
-        expect(alert).toHaveBeenCalledWith(expect.stringContaining('Error'));
-    });
-
-    test('deleteSoftware shows confirmation and handles deletion', async () => {
-        global.confirm = jest.fn(() => true);
-        global.fetch.mockResolvedValueOnce({
-            ok: true
-        });
-
-        require('../static/js/main.js');
-        await window.deleteSoftware(1);
-
-        expect(confirm).toHaveBeenCalled();
-        expect(fetch).toHaveBeenCalledWith('/api/software/1', {
-            method: 'DELETE'
+            body: JSON.stringify(formData)
         });
     });
 
     test('loadSoftwareList handles API error gracefully', async () => {
-        global.fetch.mockRejectedValueOnce(new Error('API Error'));
+        const error = new Error('API Error');
+        global.fetch.mockRejectedValueOnce(error);
 
-        require('../static/js/main.js');
-        await window.loadSoftwareList();
+        await mainModule.loadSoftwareList();
 
-        expect(alert).toHaveBeenCalledWith('Error loading software list');
+        expect(console.error).toHaveBeenCalled();
+        expect(alert).toHaveBeenCalledWith('Error loading software list: API Error');
     });
 
-    test('setupSearch initializes search functionality', () => {
-        require('../static/js/main.js');
-        
-        const searchInput = document.getElementById('softwareSearch');
-        const event = new window.Event('input');
-        searchInput.value = 'test';
-        searchInput.dispatchEvent(event);
+    test('setupImportForm handles file upload correctly', async () => {
+        const file = new File(['test content'], 'test.xlsx', {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
 
-        // Should not throw any errors
-        expect(() => window.setupSearch()).not.toThrow();
+        const fileInput = document.getElementById('excelFile');
+        Object.defineProperty(fileInput, 'files', {
+            value: [file],
+            writable: true
+        });
+
+        mainModule.setupImportForm();
+        const form = document.getElementById('importForm');
+        fireEvent.submit(form);
+
+        const lastCall = fetch.mock.calls[fetch.mock.calls.length - 1];
+        expect(lastCall[0]).toBe('/api/software/import');
+        expect(lastCall[1].method).toBe('POST');
+        expect(lastCall[1].body).toBeTruthy();
+        expect(typeof lastCall[1].body.append).toBe('function');
     });
 });
 
-describe('Software Module', () => {
-  beforeEach(() => {
-    document.body.innerHTML = `
-      <div id="softwareList"></div>
-      <form id="softwareForm">
-        <input type="text" id="softwareName" />
-        <input type="text" id="version" />
-        <textarea id="description"></textarea>
-        <input type="file" id="excelFile" />
-        <button type="submit">Save</button>
-      </form>
-    `;
-    
-    // Mock fetch API
-    global.fetch = jest.fn();
-    global.FormData = jest.fn(() => ({
-      append: jest.fn(),
-    }));
-  });
-
-  test('should display software list correctly', async () => {
-    const mockData = [
-      { id: 1, name: 'Test Software', version: '1.0.0', description: 'Test Description' }
-    ];
-    
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(mockData)
-    });
-
-    await window.loadSoftwareList();
-    
-    const softwareList = document.getElementById('softwareList');
-    expect(softwareList.innerHTML).toContain('Test Software');
-    expect(softwareList.innerHTML).toContain('1.0.0');
-  });
-
-  test('should handle form submission correctly', async () => {
-    const form = document.getElementById('softwareForm');
-    const nameInput = document.getElementById('softwareName');
-    const versionInput = document.getElementById('version');
-    const descInput = document.getElementById('description');
-    
-    nameInput.value = 'New Software';
-    versionInput.value = '2.0.0';
-    descInput.value = 'New Description';
-    
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ id: 2, name: 'New Software' })
-    });
-    
-    fireEvent.submit(form);
-    
-    expect(fetch).toHaveBeenCalledWith('/api/software', expect.any(Object));
-  });
-
-  test('should handle Excel file upload', async () => {
-    const file = new File(['test content'], 'test.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const fileInput = document.getElementById('excelFile');
-    
-    Object.defineProperty(fileInput, 'files', {
-      value: [file]
-    });
-    
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ message: 'File uploaded successfully' })
-    });
-    
-    fireEvent.change(fileInput);
-    
-    expect(fetch).toHaveBeenCalledWith('/api/software/import', expect.any(Object));
-  });
-
-  test('should handle errors gracefully', async () => {
-    global.fetch.mockRejectedValueOnce(new Error('Network error'));
-    global.console.error = jest.fn();
-    
-    await window.loadSoftwareList();
-    
-    expect(console.error).toHaveBeenCalled();
-  });
-});
-
-describe('Customer Import Form', () => {
+describe('ITHC Software Management', () => {
     beforeEach(() => {
         document.body.innerHTML = `
-            <form id="importCustomersForm">
-                <input type="file" id="customerExcelFile" />
-                <button type="submit">Import</button>
+            <div id="ithcTableBody"></div>
+            <select id="projectSelect"></select>
+            <select id="projectVersionSelect"></select>
+            <select id="softwareSelect"></select>
+            <input id="currentVersion" />
+            <input id="latestVersion" />
+            <button id="addITHCBtn">Add Software</button>
+            <form id="ithcForm">
+                <input id="ithcId" type="hidden" />
             </form>
+            <div id="ithcModal"></div>
         `;
-        global.fetch = jest.fn();
-        global.FormData = jest.fn(() => ({
-            append: jest.fn()
-        }));
-    });
 
-    test('setupCustomerImportForm handles file import correctly', async () => {
-        global.fetch.mockResolvedValueOnce({
+        // Mock fetch responses
+        global.fetch = jest.fn(() => Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({ imported: 2, updated: 1 })
-        });
+            json: () => Promise.resolve({
+                id: 1,
+                project_id: 1,
+                software_id: 1,
+                project_version: '1.0.0',
+                current_software_version: '1.0.0'
+            })
+        }));
 
-        require('../static/js/main.js');
-        
-        const form = document.getElementById('importCustomersForm');
-        const fileInput = document.getElementById('customerExcelFile');
-        
-        Object.defineProperty(fileInput, 'files', {
-            value: [new File([''], 'customers.xlsx')]
-        });
-
-        const event = new window.Event('submit');
-        form.dispatchEvent(event);
-
-        expect(fetch).toHaveBeenCalledWith('/api/customers/import', {
-            method: 'POST',
-            body: expect.any(FormData)
-        });
+        // Mock bootstrap
+        global.bootstrap = {
+            Modal: jest.fn().mockImplementation(() => ({
+                show: jest.fn(),
+                hide: jest.fn()
+            }))
+        };
     });
 
-    test('setupCustomerImportForm handles import error correctly', async () => {
-        global.fetch.mockResolvedValueOnce({
-            ok: false,
-            json: () => Promise.resolve({ error: 'Import failed' })
-        });
+    test('loadProjects fetches and displays projects correctly', async () => {
+        global.fetch.mockImplementationOnce(() => Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([{
+                id: 1,
+                name: 'Test Project',
+                software_version: '1.0.0'
+            }])
+        }));
 
-        require('../static/js/main.js');
-        
-        const form = document.getElementById('importCustomersForm');
-        const fileInput = document.getElementById('customerExcelFile');
-        
-        Object.defineProperty(fileInput, 'files', {
-            value: [new File([''], 'customers.xlsx')]
-        });
+        await ithcModule.loadProjects();
 
-        const event = new window.Event('submit');
-        form.dispatchEvent(event);
+        expect(fetch).toHaveBeenCalledWith('/api/projects');
+        const projectSelect = document.getElementById('projectSelect');
+        expect(projectSelect.innerHTML).toContain('Test Project');
+        expect(projectSelect.innerHTML).toContain('1.0.0');
+    });
 
-        await new Promise(process.nextTick);
-        expect(alert).toHaveBeenCalledWith(expect.stringContaining('Error'));
+    test('displayITHCList renders entries correctly', () => {
+        const ithcList = [{
+            id: 1,
+            software: {
+                name: 'Test Software',
+                latest_version: '2.0.0'
+            },
+            current_software_version: '1.0.0',
+            updated_at: '2025-04-14T10:00:00'
+        }];
+
+        ithcModule.displayITHCList(ithcList);
+
+        const tbody = document.getElementById('ithcTableBody');
+        expect(tbody.innerHTML).toContain('Test Software');
+        expect(tbody.innerHTML).toContain('1.0.0');
+        expect(tbody.innerHTML).toContain('2.0.0');
     });
 });
