@@ -4,7 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -16,51 +15,45 @@ lib64/
 parts/
 sdist/
 var/
+wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
-# Virtual Environment
+MANIFEST
 venv/
-ENV/
-.env
+backend/venv/
 
 # Node
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.npm
+.env
+.env.test
+.env.production
 
-# IDEs and editors
+# SQLite
+*.db
+*.sqlite3
+instance/
+
+# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-*~
-
-# SQLite database
-instance/
-*.db
-*.sqlite3
-
-# Temporary files
-*.tmp
-~$*
 .DS_Store
 
-# Testing
+# Excel temp files
+~$*.xlsx
+
+# Test coverage
 .coverage
 htmlcov/
 .pytest_cache/
-.tox/
 coverage/
 .nyc_output/
 
-# Distribution / packaging
+# Distribution
 dist/
 build/
-*.egg-info/
-
-# Jupyter Notebook
-.ipynb_checkpoints
