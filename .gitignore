@@ -8,61 +8,59 @@ env/
 build/
 develop-eggs/
 dist/
+downloads/
 eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
 *.egg-info/
+.installed.cfg
+*.egg
 
 # Virtual Environment
 venv/
 ENV/
 .env
-.venv
-backend/venv/
 
-# Node.js
+# Node
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .npm
 
-# Database
-instance/
-*.db
-*.sqlite3
-
-# Testing and Coverage
-.coverage
-coverage/
-htmlcov/
-.tox/
-.nox/
-.pytest_cache/
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-
-# IDE/Editor
+# IDEs and editors
 .idea/
 .vscode/
 *.swp
 *.swo
-.DS_Store
-*.sublime-workspace
-*.sublime-project
+*~
+
+# SQLite database
+instance/
+*.db
+*.sqlite3
 
 # Temporary files
-~$*
 *.tmp
-*.bak
-*.log
+~$*
+.DS_Store
 
-# Uploads directory (except templates)
-uploads/*
-!uploads/*.xlsx
-uploads/~$*
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+coverage/
+.nyc_output/
 
-# Distribution
+# Distribution / packaging
 dist/
 build/
 *.egg-info/
+
+# Jupyter Notebook
+.ipynb_checkpoints
