@@ -273,6 +273,163 @@ flask run
 
 2. Access the application at `http://localhost:5000`
 
+
+## DevTest VM Deployment
+
+### System Requirements
+- Ubuntu 20.04 LTS or later
+- 2GB RAM minimum
+- 20GB storage
+- Python 3.8+
+- Nginx
+- Systemd
+- Git
+
+### 1. System Preparation
+```bash
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Install required packages
+sudo apt install -y python3-pip python3-venv nginx git nodejs npm
+```
+
+### 2. Application Setup
+```bash
+# Create application directory
+sudo mkdir -p /opt/ithcapp
+sudo chown -R $USER:$USER /opt/ithcapp
+
+# Clone repository
+git clone <repository-url> /opt/ithcapp
+cd /opt/ithcapp
+
+# Setup backend
+python3 -m venv venv
+source venv/bin/activate
+cd backend
+pip install -r requirements.txt
+pip install gunicorn
+
+# Setup frontend
+cd ../frontend
+npm install
+npm run build
+```
+
+### 3. Configure Gunicorn
+```bash
+# Create systemd service file
+sudo nano /etc/systemd/system/ithcapp.service
+```
+
+Add this content to the service file:
+```ini
+[Unit]
+Description=ITHC Software App
+After=network.target
+
+[Service]
+User=<your-user>
+WorkingDirectory=/opt/ithcapp/backend
+Environment="PATH=/opt/ithcapp/venv/bin"
+ExecStart=/opt/ithcapp/venv/bin/gunicorn -w 4 -b 127.0.0.1:8000 app:app
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### 4. Configure Nginx
+```bash
+# Create Nginx config
+sudo nano /etc/nginx/sites-available/ithcapp
+```
+
+Add this content:
+```nginx
+server {
+    listen 80;
+    server_name your-domain-or-ip;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location /static/ {
+        alias /opt/ithcapp/frontend/static/;
+    }
+}
+```
+
+### 5. Enable and Start Services
+```bash
+# Configure Nginx
+sudo ln -s /etc/nginx/sites-available/ithcapp /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+
+# Start application
+sudo systemctl start ithcapp
+sudo systemctl enable ithcapp
+```
+
+### 6. Database Setup
+```bash
+cd /opt/ithcapp/backend
+source ../venv/bin/activate
+export FLASK_APP=app.py
+flask db upgrade
+```
+
+### 7. Environment Configuration
+```bash
+# Create environment file
+nano /opt/ithcapp/backend/.env
+```
+
+Add these variables:
+```ini
+FLASK_ENV=production
+DATABASE_URL=sqlite:///instance/software.db
+SECRET_KEY=<your-secret-key>
+```
+
+### Monitoring and Logs
+```bash
+# View application logs
+sudo journalctl -u ithcapp
+
+# View Nginx logs
+sudo tail -f /var/log/nginx/error.log
+sudo tail -f /var/log/nginx/access.log
+```
+
+### Security Considerations
+1. Configure UFW firewall:
+```bash
+sudo ufw allow 'Nginx Full'
+sudo ufw enable
+```
+
+2. Setup SSL with Let's Encrypt:
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d your-domain.com
+```
+
+### Backup Configuration
+```bash
+# Backup database
+cd /opt/ithcapp/backend
+sqlite3 instance/software.db ".backup '/backup/software-$(date +%Y%m%d).db'"
+
+# Backup configuration
+sudo cp -r /etc/nginx/sites-available/ithcapp /backup/
+sudo cp /etc/systemd/system/ithcapp.service /backup/
+```
+
 ## Development Notes
 
 - The application uses SQLite for development. The database file is created at `backend/instance/software.db`
