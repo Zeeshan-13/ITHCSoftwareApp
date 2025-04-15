@@ -2,6 +2,110 @@
 
 A web-based application for managing software versions, projects, and customer relationships.
 
+## Architecture Diagrams
+
+### Application Architecture
+```mermaid
+graph TD
+    A[Client Browser] <--> B[Frontend Layer]
+    subgraph Frontend
+        B --> C[HTML Templates]
+        B --> D[Static Assets]
+        D --> E[JavaScript Modules]
+        D --> F[CSS]
+        E --> E1[main.js]
+        E --> E2[projects.js]
+        E --> E3[ithc.js]
+        E --> E4[utilities.js]
+    end
+    B <--> G[Backend Layer]
+    subgraph Backend
+        G --> H[Flask Application]
+        H --> I[REST API Endpoints]
+        H --> J[Route Handlers]
+        H --> K[Database Interface]
+    end
+    K <--> L[Data Layer/SQLite]
+```
+
+### Data Model
+```mermaid
+erDiagram
+    Software ||--o{ Project : has
+    Software ||--o{ ITHCSoftware : tracks
+    Project ||--o{ Release : contains
+    Project ||--o{ ITHCSoftware : has
+    Project }|--o{ Customer : serves
+    
+    Software {
+        int id PK
+        string name UK
+        string software_type
+        string latest_version
+        datetime last_updated
+        string check_url
+    }
+    
+    Project {
+        int id PK
+        string name
+        string description
+        datetime created_at
+        int software_id FK
+        string software_version
+    }
+    
+    Customer {
+        int id PK
+        string name
+        string email
+        string contact_person
+    }
+    
+    ITHCSoftware {
+        int id PK
+        int project_id FK
+        int software_id FK
+        string project_version
+        string current_software_version
+        datetime created_at
+        datetime updated_at
+    }
+    
+    Release {
+        int id PK
+        string version
+        datetime release_date
+        string notes
+        int project_id FK
+    }
+```
+
+### Code Flow (Typical Request)
+```mermaid
+sequenceDiagram
+    participant U as User/Browser
+    participant F as Frontend JS
+    participant A as Flask API
+    participant D as Database
+    
+    U->>F: User Action
+    activate F
+    F->>F: Event Handler
+    F->>A: API Request
+    activate A
+    A->>A: Request Validation
+    A->>D: Database Operation
+    activate D
+    D-->>A: Data Response
+    deactivate D
+    A-->>F: JSON Response
+    deactivate A
+    F->>F: Update DOM
+    F->>U: User Feedback
+    deactivate F
+```
+
 ## Features
 
 - Software Management
