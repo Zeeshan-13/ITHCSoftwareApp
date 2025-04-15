@@ -273,6 +273,255 @@ flask run
 
 2. Access the application at `http://localhost:5000`
 
+## Release Process
+
+### Creating a Release
+
+1. Ensure all tests pass and coverage meets requirements
+```bash
+# Backend tests
+cd backend
+python -m pytest --cov=. --cov-report=html:coverage-report
+
+# Frontend tests
+cd ../frontend
+npm test -- --coverage
+```
+
+2. Update version numbers
+- Update version in `backend/app.py`
+- Update version in `frontend/package.json`
+- Update version in `README.md`
+
+3. Create release notes
+- Document new features
+- Document bug fixes
+- Document breaking changes
+- List any database migrations
+- List any configuration changes
+
+4. Create a GitHub Release
+- Tag format: v1.0.0 (following semantic versioning)
+- Title: Version 1.0.0
+- Include release notes
+- Attach build artifacts:
+  - Frontend build files
+  - Database migration scripts
+  - Configuration templates
+
+### Production Deployment
+
+#### Prerequisites
+- Linux server (Ubuntu 20.04 LTS or later recommended)
+- 4GB RAM minimum
+- 40GB storage
+- Domain name configured (for SSL)
+- Python 3.8+
+- Nginx
+- PostgreSQL 12+
+- Redis (for caching)
+- SSL certificate
+
+#### Pre-deployment Checklist
+1. Database backup
+2. Configuration backup
+3. Document rollback plan
+4. Maintenance window communication
+5. SSL certificate validity check
+6. System resource check
+
+#### Deployment Steps
+
+1. Stop existing services
+```bash
+sudo systemctl stop ithcapp
+sudo systemctl stop nginx
+```
+
+2. Backup existing deployment
+```bash
+# Backup database
+cd /opt/ithcapp/backend
+sqlite3 instance/software.db ".backup '/backup/software-$(date +%Y%m%d).db'"
+
+# Backup configuration
+sudo cp -r /etc/nginx/sites-available/ithcapp /backup/
+sudo cp /etc/systemd/system/ithcapp.service /backup/
+```
+
+3. Deploy new release
+```bash
+# Download release
+cd /opt/ithcapp
+git fetch --tags
+git checkout v1.0.0  # Replace with actual version
+
+# Update backend
+cd backend
+source venv/bin/activate
+pip install -r requirements.txt
+pip install gunicorn psycopg2-binary redis
+
+# Run migrations
+export FLASK_APP=app.py
+flask db upgrade
+
+# Update frontend
+cd ../frontend
+npm install
+npm run build
+```
+
+4. Update configuration
+```bash
+# Update environment variables
+sudo nano /opt/ithcapp/backend/.env
+```
+
+Production environment variables:
+```ini
+FLASK_ENV=production
+DATABASE_URL=postgresql://user:password@localhost:5432/ithcapp
+REDIS_URL=redis://localhost:6379
+SECRET_KEY=<your-secure-key>
+ALLOWED_HOSTS=your-domain.com
+```
+
+5. Configure services
+```bash
+# Update systemd service
+sudo nano /etc/systemd/system/ithcapp.service
+```
+
+```ini
+[Unit]
+Description=ITHC Software App
+After=network.target postgresql.service redis.service
+
+[Service]
+User=ithcapp
+Group=ithcapp
+WorkingDirectory=/opt/ithcapp/backend
+Environment="PATH=/opt/ithcapp/venv/bin"
+Environment="FLASK_ENV=production"
+Environment="DATABASE_URL=postgresql://user:password@localhost:5432/ithcapp"
+Environment="REDIS_URL=redis://localhost:6379"
+ExecStart=/opt/ithcapp/venv/bin/gunicorn -w 4 -b 127.0.0.1:8000 app:app --access-logfile /var/log/ithcapp/access.log --error-logfile /var/log/ithcapp/error.log
+
+[Install]
+WantedBy=multi-user.target
+```
+
+6. Configure Nginx
+```bash
+sudo nano /etc/nginx/sites-available/ithcapp
+```
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com;
+
+    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+    
+    access_log /var/log/nginx/ithcapp-access.log;
+    error_log /var/log/nginx/ithcapp-error.log;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /static/ {
+        alias /opt/ithcapp/frontend/static/;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+}
+
+server {
+    listen 80;
+    server_name your-domain.com;
+    return 301 https://$server_name$request_uri;
+}
+```
+
+7. Start services
+```bash
+# Reload systemd
+sudo systemctl daemon-reload
+
+# Start services
+sudo systemctl start postgresql
+sudo systemctl start redis
+sudo systemctl start ithcapp
+sudo systemctl start nginx
+
+# Enable services on boot
+sudo systemctl enable postgresql
+sudo systemctl enable redis
+sudo systemctl enable ithcapp
+sudo systemctl enable nginx
+```
+
+8. Verify deployment
+- Check service status
+- Verify SSL certificate
+- Test all major features
+- Monitor logs
+- Check database connectivity
+- Verify Redis caching
+
+#### Monitoring
+
+1. Application logs
+```bash
+sudo journalctl -u ithcapp
+tail -f /var/log/ithcapp/error.log
+```
+
+2. Nginx logs
+```bash
+tail -f /var/log/nginx/ithcapp-error.log
+tail -f /var/log/nginx/ithcapp-access.log
+```
+
+3. System monitoring
+```bash
+htop
+df -h
+free -m
+```
+
+#### Rollback Procedure
+
+1. Stop services
+```bash
+sudo systemctl stop ithcapp nginx
+```
+
+2. Restore backup
+```bash
+# Restore database
+sqlite3 instance/software.db ".restore '/backup/software-YYYYMMDD.db'"
+
+# Restore code
+git checkout <previous-version-tag>
+
+# Restore configurations
+sudo cp /backup/ithcapp /etc/nginx/sites-available/
+sudo cp /backup/ithcapp.service /etc/systemd/system/
+```
+
+3. Restart services
+```bash
+sudo systemctl daemon-reload
+sudo systemctl start ithcapp nginx
+```
 
 ## DevTest VM Deployment
 

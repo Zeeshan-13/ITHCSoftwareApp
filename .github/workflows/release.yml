@@ -1,0 +1,111 @@
+name: Release Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+          
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Install Node.js dependencies
+        run: |
+          cd frontend
+          npm install
+          
+      - name: Run backend tests
+        run: |
+          cd backend
+          python -m pytest --cov=. --cov-report=xml
+
+      - name: Run frontend tests
+        run: |
+          cd frontend
+          npm test -- --coverage --ci
+
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage-reports
+          path: |
+            backend/coverage.xml
+            frontend/coverage
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Prepare release package
+        run: |
+          mkdir release-package
+          cp -r backend release-package/
+          cp -r frontend/static release-package/frontend/
+          cp -r frontend/templates release-package/frontend/
+          cp README.md release-package/
+          cp requirements.txt release-package/
+          
+          # Remove development files
+          cd release-package
+          find . -name "__pycache__" -exec rm -rf {} +
+          find . -name "*.pyc" -delete
+          find . -name "*.pyo" -delete
+          find . -name ".pytest_cache" -exec rm -rf {} +
+          find . -name "node_modules" -exec rm -rf {} +
+          
+          # Create release archive
+          cd ..
+          tar -czf ithcapp-release.tar.gz release-package
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ithcapp-release.tar.gz
+          asset_name: ithcapp-release.tar.gz
+          asset_content_type: application/gzip
