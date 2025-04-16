@@ -736,6 +736,81 @@ sudo cp /etc/systemd/system/ithcapp.service /backup/
 - Check `flask run` output for errors
 - Verify database connection
 
+## DevOps Training Program Flow
+
+```mermaid
+graph TB
+    subgraph "Part 1: DevOps Fundamentals"
+        A[Start] --> B[Setup Development Environment]
+        B --> C[Git & Version Control]
+        C --> D[Python Basics]
+        D --> E[Local Development]
+        E --> F[Ansible Basics]
+        F --> G[Jenkins CI/CD]
+        G --> H[Package & Release]
+    end
+
+    subgraph "Part 2: Container Management"
+        H --> I[Docker Fundamentals]
+        I --> J[Container Build & Test]
+        J --> K[Container Registry]
+        K --> L[Container Deployment]
+    end
+
+    subgraph "Part 3: Advanced DevOps"
+        L --> M[Monitoring - Prometheus/Grafana]
+        M --> N[Logging - ELK Stack]
+        N --> O[SSL/Security]
+        O --> P[DevSecOps - Veracode]
+        P --> Q[Integration - JIRA/Teams]
+    end
+
+    subgraph "Learning Path Structure"
+        direction LR
+        T1[Theory] --> P1[Practice]
+        P1 --> H1[Hands-on Exercise]
+        H1 --> A1[Assessment]
+        A1 --> N1[Next Module]
+    end
+
+    subgraph "Assessment Methods"
+        direction LR
+        K1[Knowledge Check] --> S1[Skill Demo]
+        S1 --> PR1[Peer Review]
+        PR1 --> D1[Documentation]
+    end
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style Q fill:#bbf,stroke:#333,stroke-width:2px
+```
+
+## Training Duration
+- Part 1: 4-5 weeks
+- Part 2: 2-3 weeks
+- Part 3: 3-4 weeks
+- Total: 9-12 weeks
+
+## Learning Format
+1. **Theory (20%)**
+   - Concept introduction
+   - Best practices
+   - Architecture understanding
+
+2. **Practice (30%)**
+   - Guided exercises
+   - Code examples
+   - Tool configuration
+
+3. **Hands-on (40%)**
+   - Real-world scenarios
+   - Problem-solving
+   - Project implementation
+
+4. **Assessment (10%)**
+   - Knowledge validation
+   - Skill demonstration
+   - Project review
+
 ## Contributing
 
 1. Fork the repository
