@@ -136,7 +136,7 @@ EOF
                     sudo tee /etc/nginx/sites-available/${APP_NAME} << EOF
 server {
     listen 80;
-    zeeshan 10.102.193.125;
+    server_name localhost;
 
     location / {
         proxy_pass http://127.0.0.1:8000;
