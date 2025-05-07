@@ -17,7 +17,7 @@ def create_app(config_name='development'):
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
     if config_name == 'testing':
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/software_db'
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:admin_123@localhost:3306/software_db'
         app.config['TESTING'] = True
     else:
         app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
