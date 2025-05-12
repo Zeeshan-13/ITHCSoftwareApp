@@ -172,3 +172,4 @@ NGINX
             echo 'Pipeline failed!'
         }
     }
+}    
