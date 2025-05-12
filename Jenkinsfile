@@ -124,9 +124,9 @@ After=network.target
 [Service]
 User=$USER
 WorkingDirectory=$DEPLOY_DIR/backend
-Environment="PATH=$DEPLOY_DIR/venv/bin"
+Environment="PATH=\$DEPLOY_DIR/venv/bin"
 Environment="FLASK_ENV=production"
-ExecStart=$DEPLOY_DIR/venv/bin/gunicorn -w 4 -b 127.0.0.1:8000 app:app
+ExecStart=\$DEPLOY_DIR/venv/bin/gunicorn -w 4 -b 127.0.0.1:8000 app:app
 
 [Install]
 WantedBy=multi-user.target
@@ -135,7 +135,7 @@ SERVICE
                         sudo tee /etc/nginx/sites-available/$APP_NAME > /dev/null << NGINX
 server {
     listen 80;
-    zeeshan 10.102.193.125;
+    server_name 10.102.193.125;
 
     location / {
         proxy_pass http://127.0.0.1:8000;
@@ -144,7 +144,7 @@ server {
     }
 
     location /static/ {
-        alias $DEPLOY_DIR/frontend/static/;
+        alias \$DEPLOY_DIR/frontend/static/;
     }
 }
 NGINX
@@ -172,4 +172,4 @@ NGINX
             echo 'Pipeline failed!'
         }
     }
-}    
+}
