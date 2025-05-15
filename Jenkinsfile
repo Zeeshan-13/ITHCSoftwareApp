@@ -20,9 +20,6 @@ pipeline {
         stage('Setup Environment') {
             steps {
                 sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate
-
                     cd backend
                     pip install -r requirements.txt
                     pip install pytest-cov pytest-html
