@@ -21,8 +21,7 @@ pipeline {
             steps {
                 sh '''
                     cd backend
-                    pip install -r requirements.txt
-                    pip install pytest-cov pytest-html
+                    sudo apt install pyhton3-pytest-cov 
 
                     cd ../frontend
                     npm install
