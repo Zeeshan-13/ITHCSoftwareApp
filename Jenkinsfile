@@ -23,6 +23,7 @@ pipeline {
                     bat 'python --version'
             }
         }
+        }
 
         stage('Setup Environment') {
             steps {
