@@ -27,15 +27,15 @@ pipeline {
 
         stage('Setup Environment') {
             steps {
-                sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate
+               bat '''
+                    python -m venv venv
+                    call venv\\Scripts\\activate
 
                     cd backend
                     pip install -r requirements.txt
                     pip install pytest-cov pytest-html
 
-                    cd ../frontend
+                    cd ..\\frontend
                     npm install
                 '''
             }
