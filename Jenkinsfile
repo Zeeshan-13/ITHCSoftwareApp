@@ -20,7 +20,7 @@ pipeline {
 
         stage('Check Python Version') {
             steps {
-                bat 'echo %PATH%'
+                bat 'python --version'
             }
         }
 
