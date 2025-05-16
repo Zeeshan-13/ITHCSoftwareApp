@@ -5,7 +5,7 @@ pipeline {
         APP_NAME = 'ithcapp'
         DEPLOY_DIR = '/application_deploy/deploy_folder'
         VENV_PATH = "${DEPLOY_DIR}/venv"
-        PYTHON = 'C:\\Program Files\\Python311\\python.exe'
+        PATH = 'C:\\Program Files\\Python311\\python.exe'
         VM_USER = 'zeeshan'
         VM_HOST = '10.102.193.125' 
         APP_PATH = '/home/zeeshan/Desktop/deploy_folder'
@@ -20,7 +20,7 @@ pipeline {
 
         stage('Check Python Version') {
             steps {
-                bat '%PYTHON% --version'
+                bat '%PATH% --version'
             }
         }
 
