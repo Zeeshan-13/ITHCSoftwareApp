@@ -27,7 +27,8 @@ pipeline {
 
         stage('Setup Environment') {
             steps {
-               bat '''
+                withEnv(['PATH=C:\\Program Files\\Python311;C:\\Program Files\\Python311\\Scripts;' + env.PATH]) {
+                    bat '''
                     python -m venv venv
                     call venv\\Scripts\\activate
 
@@ -38,6 +39,7 @@ pipeline {
                     cd ..\\frontend
                     npm install
                 '''
+                }
             }
         }
 
