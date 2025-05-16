@@ -20,7 +20,7 @@ pipeline {
 
         stage('Check Python Version') {
             steps {
-                bat '"C:\\Program Files\\Python311\\python.exe" --version'
+                bat 'echo %PATH%'
             }
         }
 
