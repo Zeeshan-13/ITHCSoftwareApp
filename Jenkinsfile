@@ -20,7 +20,8 @@ pipeline {
 
         stage('Check Python Version') {
             steps {
-                bat 'python --version'
+                withEnv(['PATH=C:\\Program Files\\Python311;C:\\Program Files\\Python311\\Scripts;' + env.PATH]) {
+                    bat 'python --version'
             }
         }
 
