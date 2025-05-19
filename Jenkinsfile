@@ -72,6 +72,7 @@ pipeline {
                         }
                     }
                 }
+            }
 
                 stage('Frontend Tests') {
                     steps {
@@ -185,3 +186,5 @@ NGINX
         }
     }
 }
+        
+    
