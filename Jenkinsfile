@@ -5,7 +5,7 @@ pipeline {
         APP_NAME = 'ithcapp'
         DEPLOY_DIR = 'C:\\application_deploy\\deploy_folder'
         VENV_PATH = "${DEPLOY_DIR}\\venv"
-        PATH = 'C:\\Program Files\\Python311;C:\\Program Files\\Python311\\Scripts'
+        PATH = 'C:\\Program Files\\Python311;C:\\Program Files\\Python311\\Scripts;${env.PATH}'
         VM_USER = 'zeeshan'
         VM_HOST = '10.102.193.125'
         APP_PATH = '/home/zeeshan/Desktop/deploy_folder'
