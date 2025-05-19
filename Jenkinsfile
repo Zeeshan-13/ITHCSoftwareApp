@@ -44,6 +44,8 @@ pipeline {
         }
 
         stage('Run Tests') {
+             steps {
+                withEnv(['PATH=C:\\Program Files\\Python311;C:\\Program Files\\Python311\\Scripts;' + env.PATH]){
             parallel {
                 stage('Backend Tests') {
                     steps {
