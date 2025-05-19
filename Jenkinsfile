@@ -86,7 +86,14 @@ pipeline {
                     }
                     post {
                         always {
-                            junit 'frontend/junit.xml'
+                            script {
+                                 def reportExists = fileExists 'frontend/junit.xml'
+                                 if (reportExists) {
+                                     junit 'frontend/junit.xml'
+                                   } else {
+                                      echo 'JUnit report not found. Skipping junit archiving.'                                   
+                                 }
+                              }
                             publishHTML([
                                 allowMissing: true,
                                 alwaysLinkToLastBuild: true,
