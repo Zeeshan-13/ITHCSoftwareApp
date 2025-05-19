@@ -47,8 +47,8 @@ pipeline {
                 stage('Backend Tests') {
                     steps {
                         withEnv(['PATH=C:\\Program Files\\Python311;C:\\Program Files\\Python311\\Scripts;' + env.PATH]) {
-                            sh '''
-                            . venv/bin/activate
+                            bat '''
+                            call venv/bin/activate
                             cd backend
                             pytest
                             pytest --cov=.
@@ -75,7 +75,7 @@ pipeline {
                 stage('Frontend Tests') {
                     steps {
                         withEnv(['PATH=C:\\Program Files\\Python311;C:\\Program Files\\Python311\\Scripts;' + env.PATH]) {
-                            sh '''
+                            bat '''
                             cd frontend
                             npm test
                             npm run test:watch || true
@@ -110,7 +110,7 @@ pipeline {
         stage('Build Frontend') {
             steps {
                 withEnv(['PATH=C:\\Program Files\\Python311;C:\\Program Files\\Python311\\Scripts;' + env.PATH]) {
-                    sh '''
+                    bat '''
                     npm run build
                     '''
                 }
@@ -120,7 +120,7 @@ pipeline {
         stage('Deploy to DevTest') {
             steps {
                 withEnv(['PATH=C:\\Program Files\\Python311;C:\\Program Files\\Python311\\Scripts;' + env.PATH]) {
-                    sh '''
+                    bat '''
                     ssh $VM_USER@$VM_HOST << 'EOF'
                         sudo mkdir -p $DEPLOY_DIR
                         sudo rm -rf $DEPLOY_DIR/*
@@ -157,7 +157,7 @@ SERVICE
                         sudo tee /etc/nginx/sites-available/$APP_NAME > /dev/null << NGINX
 server {
     listen 80;
-    server_name 10.102.193.125;
+    zeeshan 10.102.193.125;
 
     location / {
         proxy_pass http://127.0.0.1:8000;
