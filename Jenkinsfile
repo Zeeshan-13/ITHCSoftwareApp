@@ -14,24 +14,23 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo "=== PATH ==="
-                bat 'echo %PATH%'
+                bat 'export %PATH%'
                 git branch: 'main', url: 'https://github.com/Zeeshan-13/ITHCSoftwareApp.git'
+                bat 'echo %PATH%'
             }
         }
 
         stage('Check Python Version') {
             steps {
-                echo "=== PATH ==="
-                bat 'echo %PATH%'
+                bat 'export %PATH%'
                 bat 'python --version'
+                 bat 'echo %PATH%'
             }
         }
 
         stage('Setup Environment') {
             steps {
-                echo "=== PATH ==="
-                bat 'echo %PATH%'
+                bat 'export %PATH%'
                 bat '''
                     python -m venv venv
                     call venv\\Scripts\\activate
@@ -41,6 +40,7 @@ pipeline {
                     cd ..\\frontend
                     npm install
                 '''
+                 bat 'echo %PATH%'
             }
         }
 
