@@ -8,6 +8,7 @@ APP_PATH="/home/zeeshan/Desktop/deploy_folder"
 sudo rm -rf "$DEPLOY_DIR"
 mkdir -p "$DEPLOY_DIR"
 cp -r "$APP_PATH"/* "$DEPLOY_DIR"
+chmod 777 -R "$DEPLOY_DIR"
 
 # Step 2: Setup Python environment
 python3 -m venv "$DEPLOY_DIR/venv"
