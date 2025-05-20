@@ -54,8 +54,8 @@ pipeline {
             steps {
                 bat '''
                     
-                    ssh %VM_USER%@%VM_HOST% "sudo chmod +x /home/zeeshan/Desktop/deploy_backend.sh"
-                    ssh %VM_USER%@%VM_HOST% "/home/zeeshan/Desktop/deploy_backend.sh"
+                    ssh zeeshan@10.102.193.125 "chmod +x /home/zeeshan/Desktop/deploy_backend.sh"
+                    ssh zeeshan@10.102.193.125 "/home/zeeshan/Desktop/deploy_backend.sh"
                 '''
             }
         }
