@@ -23,5 +23,5 @@ flask db upgrade
 # Step 3: Restart services
 sudo systemctl daemon-reload
 sudo systemctl restart nginx
-sudo systemctl restart "$ITHCAPP"
-sudo systemctl enable "$ITHCAPP"
+sudo systemctl restart "$APP_NAME"
+sudo systemctl enable "$APP_NAME"
