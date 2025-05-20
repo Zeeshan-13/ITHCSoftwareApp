@@ -55,6 +55,7 @@ pipeline {
                 bat '''
                     scp %LOCAL_DEPLOY_SCRIPT% %VM_USER%@%VM_HOST%:/home/zeeshan/Desktop
                     ssh %VM_USER%@%VM_HOST% "chmod +x /home/zeeshan/Desktop/deploy_backend.sh"
+                    ssh %VM_USER%@%VM_HOST% "/home/zeeshan/Desktop/deploy_backend.sh"
                 '''
             }
         }
