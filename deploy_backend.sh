@@ -1,4 +1,4 @@
-set -e
+set -x
 
 APP_NAME="ithcapp"
 DEPLOY_DIR="/application_deploy/deploy_folder"
