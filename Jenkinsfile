@@ -53,8 +53,7 @@ pipeline {
         stage('Deploy to DevTest') {
             steps {
                 bat '''
-                    ssh %VM_USER%@%VM_HOST% "chmod +x /home/zeeshan/Desktop/deploy_backend.sh"
-                   // ssh -tt %VM_USER%@%VM_HOST% "/home/zeeshan/Desktop/deploy_backend.sh"
+                   plink -ssh %VM_USER%@%VM_HOST% -batch "chmod +x /home/zeeshan/Desktop/deploy_backend.sh && /home/zeeshan/Desktop/deploy_backend.sh"
                 '''
             }
         }
