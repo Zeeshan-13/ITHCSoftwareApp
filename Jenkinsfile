@@ -52,7 +52,7 @@ pipeline {
 
         stage('Deploy to DevTest') {
             steps {
-                bat ''
+                sh ''
                     ssh zeeshan@10.102.193.125 " /usr/bin/chmod +x /home/zeeshan/Desktop/deploy_backend.sh"
                     ssh zeeshan@10.102.193.125 "/home/zeeshan/Desktop/deploy_backend.sh"
                 '''
