@@ -53,7 +53,7 @@ pipeline {
         stage('Deploy to DevTest') {
             steps {
                 bat '''
-                   ssh %REMOTE_USER%@%REMOTE_HOST% "chmod +x deploy_backend.sh"
+                   ssh %VM_USER%@%VM_HOST% "chmod +x deploy_backend.sh"
                 '''
             }
         }
