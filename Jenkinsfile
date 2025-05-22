@@ -18,9 +18,9 @@ pipeline {
 
         stage('Setup Python Environment') {
             steps {
-                bat '''
-                    python -m venv venv
-                    call venv\\Scripts\\activate
+                sh '''
+                    python3 -m venv venv
+                    source venv/bin/activate
                     cd backend
                     pip install -r requirements.txt
                     pip install pymysql pytest-cov pytest-html
@@ -30,8 +30,8 @@ pipeline {
 
         stage('Backend Tests') {
             steps {
-                bat '''
-                    call venv\\Scripts\\activate
+                sh '''
+                    source venv/bin/activate
                     cd backend
                     pytest --cov=. --cov-report=html:coverage-report --html=test-report.html || exit 0
                 '''
@@ -52,8 +52,8 @@ pipeline {
 
         stage('Deploy to DevTest') {
             steps {
-                bat '''
-                   'ssh -o StrictHostKeyChecking=no zeeshan@10.102.193.125 "chmod +x /home/zeeshan/Desktop/deploy_backend.sh"'
+                sh '''
+                    ssh -o StrictHostKeyChecking=no zeeshan@10.102.193.125 "chmod +x /home/zeeshan/Desktop/deploy_backend.sh"
                 '''
             }
         }
