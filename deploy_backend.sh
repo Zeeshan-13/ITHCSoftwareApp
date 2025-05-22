@@ -1,7 +1,7 @@
 set -x
 
 APP_NAME="ithcapp"
-DEPLOY_DIR="/application_deploy/deploy_folder"
+DEPLOY_DIR="/home/zeeshan/Desktop/main_deploy"
 APP_PATH="/home/zeeshan/Desktop/deploy_folder"
 
 # Step 1: Prepare deploy folder
