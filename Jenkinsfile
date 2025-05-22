@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        BACKEND_DIR = 'backend'
+        DEPLOY_DIR = '/home/zeeshan/Desktop/main_deploy'
         VENV_PATH = 'venv'
         VM_USER = 'zeeshan'
         VM_HOST = '10.102.193.125'
@@ -22,7 +22,7 @@ pipeline {
                     python -m venv %VENV_PATH%
                     call %VENV_PATH%\\Scripts\\activate
                     pip install --upgrade pip
-                    pip install -r %BACKEND_DIR%\\requirements.txt pymysql pytest-cov pytest-html
+                    pip install -r %DEPLOY_DIR%\\requirements.txt pymysql pytest-cov pytest-html
                 """
             }
         }
@@ -31,7 +31,7 @@ pipeline {
             steps {
                 bat """
                     call %VENV_PATH%\\Scripts\\activate
-                    pytest %BACKEND_DIR% --cov=%BACKEND_DIR% --cov-report=html:%BACKEND_DIR%\\coverage-report --html=%BACKEND_DIR%\\test-report.html || exit 0
+                    pytest %DEPLOY_DIR% --cov=%DEPLOY_DIR% --cov-report=html:%DEPLOY_DIR%\\coverage-report --html=%DEPLOY_DIR%\\test-report.html || exit 0
                 """
             }
             post {
@@ -40,7 +40,7 @@ pipeline {
                         allowMissing: true,
                         alwaysLinkToLastBuild: true,
                         keepAll: true,
-                        reportDir: "${env.BACKEND_DIR}/coverage-report",
+                        reportDir: "${env.DEPLOY_DIR}/coverage-report",
                         reportFiles: 'index.html',
                         reportName: 'Backend Test Coverage'
                     ])
