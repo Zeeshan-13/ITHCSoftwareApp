@@ -1,3 +1,4 @@
+#!/bin/bash
 set -x
 
 APP_NAME="ithcapp"
@@ -18,10 +19,20 @@ cd "$DEPLOY_DIR/backend"
 pip install -r requirements.txt
 pip install gunicorn
 
+# Step 3: Apply Flask database migrations
 export FLASK_APP=app.py
+export FLASK_ENV=production
 flask db upgrade
 
-# Step 3: Restart services
+# Step 4: Setup frontend
+cd "$DEPLOY_DIR/frontend"
+npm install
+
+# Step 5: Start Flask server in background (as fallback, if not using systemd)
+cd "$DEPLOY_DIR/backend"
+nohup python3 -m flask run --host=0.0.0.0 --port=5000 > flask.log 2>&1 &
+
+# Step 6: Restart system services (if configured with systemd)
 sudo systemctl daemon-reload
 sudo systemctl restart nginx
 sudo systemctl restart "$APP_NAME"
