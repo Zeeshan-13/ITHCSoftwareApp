@@ -53,7 +53,8 @@ pipeline {
         stage('Deploy to DevTest') {
             steps {
                 bat '''
-                    ssh -o StrictHostKeyChecking=no zeeshan@10.102.193.125 "chmod +x /home/zeeshan/Desktop/deploy_backend.sh"
+                    ssh -i C:\\Users\\jenkins\\.ssh\\id_rsa -o StrictHostKeyChecking=no zeeshan@10.102.193.125 "chmod +x /home/zeeshan/Desktop/deploy_backend.sh"
+
                 '''
             }
         }
