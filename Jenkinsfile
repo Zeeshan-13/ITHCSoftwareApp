@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DEPLOY_DIR = '/home/zeeshan/Desktop/main_deploy'
+        DEPLOY_DIR = 'backend'
         VENV_PATH = 'venv'
         VM_USER = 'zeeshan'
         VM_HOST = '10.102.193.125'
