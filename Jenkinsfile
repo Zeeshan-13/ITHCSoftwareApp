@@ -53,7 +53,7 @@ pipeline {
         stage('Deploy to DevTest') {
             steps {
                 bat '''
-                   ssh %VM_USER%@%VM_HOST% "chmod +x deploy_backend.sh"
+                   'ssh -o StrictHostKeyChecking=no zeeshan@10.102.193.125 "chmod +x deploy_backend.sh"'
                 '''
             }
         }
