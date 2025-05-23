@@ -35,7 +35,7 @@ SERVICE
 sudo tee /etc/nginx/sites-available/ithcapp > /dev/null << NGINX
 server {
     listen 80;
-    server_name ${VM_HOST};
+    server_name 10.102.193.125;
 
     location / {
         proxy_pass http://127.0.0.1:8000;
