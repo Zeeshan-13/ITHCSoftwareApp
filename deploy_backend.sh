@@ -1,39 +1,59 @@
 #!/bin/bash
-set -x
 
-APP_NAME="ithcapp"
-DEPLOY_DIR="backend"
-APP_PATH="/home/zeeshan/Desktop/deploy_folder"
+set -e
 
-# Step 1: Prepare deploy folder
-sudo rm -rf "$DEPLOY_DIR"
-mkdir -p "$DEPLOY_DIR"
-cp -r "$APP_PATH"/* "$DEPLOY_DIR"
-chmod 777 -R "$DEPLOY_DIR"
+echo "Starting deployment..."
 
-# Step 2: Setup Python environment
-python3 -m venv "$DEPLOY_DIR/venv"
-source "$DEPLOY_DIR/venv/bin/activate"
+cd /home/zeeshan/Desktop/deploy_folder
 
-cd "$DEPLOY_DIR/backend"
+python3 -m venv venv
+source venv/bin/activate
+
+cd backend
 pip install -r requirements.txt
 pip install gunicorn
 
-# Step 3: Apply Flask database migrations
 export FLASK_APP=app.py
-export FLASK_ENV=production
 flask db upgrade
 
-# Step 4: Setup frontend
-cd "$DEPLOY_DIR/frontend"
-npm install
+sudo tee /etc/systemd/system/ithcapp.service > /dev/null << SERVICE
+[Unit]
+Description=ITHC Software App
+After=network.target
 
-# Step 5: Start Flask server in background (as fallback, if not using systemd)
-cd "$DEPLOY_DIR/backend"
-nohup python3 -m flask run --host=0.0.0.0 --port=5000 > flask.log 2>&1 &
+[Service]
+User=\$USER
+WorkingDirectory=${DEPLOY_DIR}/backend
+Environment="PATH=${DEPLOY_DIR}/venv/bin"
+Environment="FLASK_ENV=production"
+ExecStart=${DEPLOY_DIR}/venv/bin/gunicorn -w 4 -b 127.0.0.1:8000 app:app
 
-# Step 6: Restart system services (if configured with systemd)
+[Install]
+WantedBy=multi-user.target
+SERVICE
+
+sudo tee /etc/nginx/sites-available/ithcapp > /dev/null << NGINX
+server {
+    listen 80;
+    server_name ${VM_HOST};
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+    }
+
+    location /static/ {
+        alias ${DEPLOY_DIR}/frontend/static/;
+    }
+}
+NGINX
+
+sudo ln -sf /etc/nginx/sites-available/ithcapp /etc/nginx/sites-enabled/
+sudo nginx -t
 sudo systemctl daemon-reload
 sudo systemctl restart nginx
-sudo systemctl restart "$APP_NAME"
-sudo systemctl enable "$APP_NAME"
+sudo systemctl restart ithcapp
+sudo systemctl enable ithcapp
+
+echo "Deployment finished!"
