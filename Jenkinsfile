@@ -6,6 +6,7 @@ pipeline {
         DEPLOY_DIR = '/home/zeeshan/Desktop/deploy_folder'
         VM_USER = 'zeeshan'
         VM_HOST = '10.102.193.125'
+        GIT_BASH_PATH = 'C:\\Users\\zeeshan.mujawar\\AppData\\Local\\Programs\\Git\\git-bash.exe'
     }
 
     stages {
@@ -61,10 +62,8 @@ pipeline {
 
         stage('Deploy to DevTest') {
             steps {
-                
-                // SSH and run deployment script remotely
                 bat """
-                    ssh zeeshan@10.102.193.125 "cd /home/zeeshan/Desktop/deploy_folder && chmod +x deploy.sh && ./deploy.sh"
+                    "${GIT_BASH_PATH}" -c 'ssh ${VM_USER}@${VM_HOST} "cd ${DEPLOY_DIR} && chmod +x deploy.sh && ./deploy.sh"'
                 """
             }
         }
