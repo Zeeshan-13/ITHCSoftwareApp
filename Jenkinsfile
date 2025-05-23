@@ -4,10 +4,8 @@ pipeline {
     environment {
         APP_NAME = 'ithcapp'
         DEPLOY_DIR = '/home/zeeshan/Desktop/deploy_folder'
-        VENV_PATH = "${DEPLOY_DIR}/venv"        
         VM_USER = 'zeeshan'
         VM_HOST = '10.102.193.125'
-        APP_PATH = '/home/zeeshan/Desktop/deploy_folder'
     }
 
     stages {
@@ -63,64 +61,14 @@ pipeline {
 
         stage('Deploy to DevTest') {
             steps {
+                // Copy files to remote
                 bat """
-                    ssh %VM_USER%@%VM_HOST% "bash -s" << 'EOF'
-                        sudo mkdir -p ${DEPLOY_DIR}
-                        sudo rm -rf ${DEPLOY_DIR}/*
-                        sudo cp -r ${APP_PATH}/* ${DEPLOY_DIR}/
-                        sudo chown -R \$USER:\$USER ${DEPLOY_DIR}
+                    pscp -r * %VM_USER%@%VM_HOST%:${DEPLOY_DIR}
+                """
 
-                        cd ${DEPLOY_DIR}
-                        python3 -m venv venv
-                        source venv/bin/activate
-
-                        cd backend
-                        pip install -r requirements.txt
-                        pip install gunicorn
-
-                        export FLASK_APP=app.py
-                        flask db upgrade
-
-                        sudo tee /etc/systemd/system/${APP_NAME}.service > /dev/null << SERVICE
-[Unit]
-Description=ITHC Software App
-After=network.target
-
-[Service]
-User=\$USER
-WorkingDirectory=${DEPLOY_DIR}/backend
-Environment="PATH=${DEPLOY_DIR}/venv/bin"
-Environment="FLASK_ENV=production"
-ExecStart=${DEPLOY_DIR}/venv/bin/gunicorn -w 4 -b 127.0.0.1:8000 app:app
-
-[Install]
-WantedBy=multi-user.target
-SERVICE
-
-                        sudo tee /etc/nginx/sites-available/${APP_NAME} > /dev/null << NGINX
-server {
-    listen 80;
-    server_name ${VM_HOST};
-
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-    }
-
-    location /static/ {
-        alias ${DEPLOY_DIR}/frontend/static/;
-    }
-}
-NGINX
-
-                        sudo ln -sf /etc/nginx/sites-available/${APP_NAME} /etc/nginx/sites-enabled/
-                        sudo nginx -t
-                        sudo systemctl daemon-reload
-                        sudo systemctl restart nginx
-                        sudo systemctl restart ${APP_NAME}
-                        sudo systemctl enable ${APP_NAME}
-                    EOF
+                // SSH and run deployment script remotely
+                bat """
+                    ssh %VM_USER%@%VM_HOST% "cd ${DEPLOY_DIR} && chmod +x deploy.sh && ./deploy.sh"
                 """
             }
         }
