@@ -61,11 +61,7 @@ pipeline {
 
         stage('Deploy to DevTest') {
             steps {
-                // Copy files to remote
-                bat """
-                    pscp -r "C:/ProgramData/Jenkins/.jenkins/workspace/Job_1_new/deploy.sh" zeeshan@10.102.193.125:/home/zeeshan/Desktop/deploy_folder/
-
-                """
+                
                 // SSH and run deployment script remotely
                 bat """
                     ssh zeeshan@10.102.193.125 "cd /home/zeeshan/Desktop/deploy_folder && chmod +x deploy.sh && ./deploy.sh"
