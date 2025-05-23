@@ -63,7 +63,7 @@ pipeline {
         stage('Deploy to DevTest') {
             steps {
                 bat """
-                    "${GIT_BASH_PATH}" -c 'ssh ${VM_USER}@${VM_HOST} "cd ${DEPLOY_DIR} && chmod +x deploy.sh && ./deploy.sh"'
+                    "${GIT_BASH_PATH}" -c 'ssh -vvv ${VM_USER}@${VM_HOST} "cd ${DEPLOY_DIR} && chmod +x deploy.sh && ./deploy.sh"'
                 """
             }
         }
