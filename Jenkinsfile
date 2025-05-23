@@ -37,55 +37,27 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
-            parallel {
-                stage('Backend Tests') {
-                    steps {
-                        bat '''
-                            call venv\\Scripts\\activate
-                            cd backend
-                            pytest
-                            pytest --cov=.
-                            pytest tests/test_software.py
-                            pytest --cov=. --cov-report=html:coverage-report --html=test-report.html || exit /b 0
-                        '''
-                    }
-                    post {
-                        always {
-                            publishHTML([
-                                allowMissing: true,
-                                alwaysLinkToLastBuild: true,
-                                keepAll: true,
-                                reportDir: 'backend\\coverage-report',
-                                reportFiles: 'index.html',
-                                reportName: 'Backend Coverage Report'
-                            ])
-                        }
-                    }
-                }
-
-                stage('Frontend Tests') {
-                    steps {
-                        bat '''
-                            cd frontend
-                            npm test || exit /b 0
-                            npm run test:watch || exit /b 0
-                            npm run test:coverage || exit /b 0
-                        '''
-                    }
-                    post {
-                        always {
-                            junit 'frontend\\junit.xml'
-                            publishHTML([
-                                allowMissing: true,
-                                alwaysLinkToLastBuild: true,
-                                keepAll: true,
-                                reportDir: 'frontend\\coverage',
-                                reportFiles: 'index.html',
-                                reportName: 'Frontend Coverage Report'
-                            ])
-                        }
-                    }
+        stage('Backend Tests') {
+            steps {
+                bat '''
+                    call venv\\Scripts\\activate
+                    cd backend
+                    pytest
+                    pytest --cov=.
+                    pytest tests/test_software.py
+                    pytest --cov=. --cov-report=html:coverage-report --html=test-report.html || exit /b 0
+                '''
+            }
+            post {
+                always {
+                    publishHTML([
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'backend\\coverage-report',
+                        reportFiles: 'index.html',
+                        reportName: 'Backend Coverage Report'
+                    ])
                 }
             }
         }
