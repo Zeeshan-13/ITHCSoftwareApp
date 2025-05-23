@@ -4,7 +4,7 @@ pipeline {
     environment {
         APP_NAME = 'ithcapp'
         DEPLOY_DIR = '/home/zeeshan/Desktop/deploy_folder'
-        VENV_PATH = "${DEPLOY_DIR}/venv"
+        VENV_PATH = "${DEPLOY_DIR}/venv"        
         VM_USER = 'zeeshan'
         VM_HOST = '10.102.193.125'
         APP_PATH = '/home/zeeshan/Desktop/deploy_folder'
@@ -31,13 +31,11 @@ pipeline {
                     cd backend
                     pip install -r requirements.txt
                     pip install pytest-cov pytest-html
-                    cd ..\\frontend
-                    npm install
                 '''
             }
         }
 
-        stage('Backend Tests') {
+        stage('Run Backend Tests') {
             steps {
                 bat '''
                     call venv\\Scripts\\activate
@@ -54,20 +52,12 @@ pipeline {
                         allowMissing: true,
                         alwaysLinkToLastBuild: true,
                         keepAll: true,
-                        reportDir: 'backend\\coverage-report',
-                        reportFiles: 'index.html',
-                        reportName: 'Backend Coverage Report'
+                        reportDir: 'backend',
+                        reportFiles: 'test-report.html,coverage-report/**',
+                        reportName: 'Backend Test Report',
+                        reportTitles: 'Test Report,Coverage Report'
                     ])
                 }
-            }
-        }
-
-        stage('Build Frontend') {
-            steps {
-                bat '''
-                    cd frontend
-                    npm run build
-                '''
             }
         }
 
@@ -75,13 +65,12 @@ pipeline {
             steps {
                 bat """
                     ssh %VM_USER%@%VM_HOST% "bash -s" << 'EOF'
-                        set -e
                         sudo mkdir -p ${DEPLOY_DIR}
                         sudo rm -rf ${DEPLOY_DIR}/*
-                        mkdir -p ${DEPLOY_DIR}
-                        cp -r * ${DEPLOY_DIR}/
-                        cd ${DEPLOY_DIR}
+                        sudo cp -r ${APP_PATH}/* ${DEPLOY_DIR}/
+                        sudo chown -R \$USER:\$USER ${DEPLOY_DIR}
 
+                        cd ${DEPLOY_DIR}
                         python3 -m venv venv
                         source venv/bin/activate
 
@@ -98,7 +87,7 @@ Description=ITHC Software App
 After=network.target
 
 [Service]
-User=zeeshan
+User=\$USER
 WorkingDirectory=${DEPLOY_DIR}/backend
 Environment="PATH=${DEPLOY_DIR}/venv/bin"
 Environment="FLASK_ENV=production"
