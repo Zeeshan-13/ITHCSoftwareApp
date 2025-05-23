@@ -16,7 +16,7 @@ pip install gunicorn
 export FLASK_APP=app.py
 flask db upgrade
 
-sudo tee /etc/systemd/system/ithcapp.service > /dev/null << SERVICE
+tee /etc/systemd/system/ithcapp.service > /dev/null << SERVICE
 [Unit]
 Description=ITHC Software App
 After=network.target
@@ -33,7 +33,7 @@ ExecStart=/home/zeeshan/Desktop/deploy_folder/venv/bin/gunicorn -w 4 -b 127.0.0.
 WantedBy=multi-user.target
 SERVICE
 
-sudo tee /etc/nginx/sites-available/ithcapp > /dev/null << NGINX
+tee /etc/nginx/sites-available/ithcapp > /dev/null << NGINX
 server {
     listen 80;
     server_name 10.102.193.125;
@@ -50,11 +50,11 @@ server {
 }
 NGINX
 
-sudo ln -sf /etc/nginx/sites-available/ithcapp /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl daemon-reload
-sudo systemctl restart nginx
-sudo systemctl restart ithcapp
-sudo systemctl enable ithcapp
+ln -sf /etc/nginx/sites-available/ithcapp /etc/nginx/sites-enabled/
+nginx -t
+systemctl daemon-reload
+systemctl restart nginx
+systemctl restart ithcapp
+systemctl enable ithcapp
 
 echo "Deployment finished!"
