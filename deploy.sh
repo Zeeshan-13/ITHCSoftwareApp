@@ -22,11 +22,12 @@ Description=ITHC Software App
 After=network.target
 
 [Service]
-User=\$USER
-WorkingDirectory=${DEPLOY_DIR}/backend
+User=zeeshan
+WorkingDirectory=/home/zeeshan/Desktop/deploy_folder/backend
 Environment="PATH=${DEPLOY_DIR}/venv/bin"
 Environment="FLASK_ENV=production"
-ExecStart=${DEPLOY_DIR}/venv/bin/gunicorn -w 4 -b 127.0.0.1:8000 app:app
+ExecStart=/home/zeeshan/Desktop/deploy_folder/venv/bin/gunicorn -w 4 -b 127.0.0.1:8000 app:app
+
 
 [Install]
 WantedBy=multi-user.target
