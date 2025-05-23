@@ -63,12 +63,11 @@ pipeline {
             steps {
                 // Copy files to remote
                 bat """
-                    pscp -r * %VM_USER%@%VM_HOST%:${DEPLOY_DIR}
-                """
+                    pscp -r "C:\ProgramData\Jenkins\.jenkins\workspace\Job_1_new\deploy.sh" zeeshan@10.102.193.125:/home/zeeshan/Desktop/deploy_folder/
 
                 // SSH and run deployment script remotely
                 bat """
-                    ssh %VM_USER%@%VM_HOST% "cd ${DEPLOY_DIR} && chmod +x deploy.sh && ./deploy.sh"
+                    ssh zeeshan@10.102.193.125 "cd /home/zeeshan/Desktop/deploy_folder && chmod +x deploy.sh && ./deploy.sh"
                 """
             }
         }
