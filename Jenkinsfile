@@ -51,7 +51,7 @@ pipeline {
         stage('Deploy to Ubuntu VM') {
             steps {
                 bat """
-                    "C:\\Users\\zeeshan.mujawar\\AppData\\Local\\Programs\\Git\\git-bash.exe" -c ssh -o StrictHostKeyChecking=no %VM_USER%@%VM_HOST% 'chmod +x %REMOTE_SCRIPT% && nohup %REMOTE_SCRIPT% > /home/zeeshan/deploy.log 2>&1 &'
+                    ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no zeeshan@10.102.193.125 "chmod +x /home/zeeshan/Desktop/deploy_backend.sh
                 """
             }
         }
