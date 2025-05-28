@@ -4,18 +4,25 @@ set -e
 
 echo "Starting deployment..."
 
-cd /home/zeeshan/Desktop/deploy_folder
+# Define deployment directory
+DEPLOY_DIR="/home/zeeshan/Desktop/deploy_folder"
 
+cd "$DEPLOY_DIR"
+
+# Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
+# Install dependencies for backend
 cd backend
 pip install -r requirements.txt
 pip install gunicorn
 
+# Run database migrations
 export FLASK_APP=app.py
 flask db upgrade
 
+# Create systemd service for Flask (Gunicorn)
 sudo tee /etc/systemd/system/ithcapp.service > /dev/null << SERVICE
 [Unit]
 Description=ITHC Software App
@@ -23,16 +30,16 @@ After=network.target
 
 [Service]
 User=zeeshan
-WorkingDirectory=/home/zeeshan/Desktop/deploy_folder/backend
+WorkingDirectory=${DEPLOY_DIR}/backend
 Environment="PATH=${DEPLOY_DIR}/venv/bin"
 Environment="FLASK_ENV=production"
-ExecStart=/home/zeeshan/Desktop/deploy_folder/venv/bin/gunicorn -w 4 -b 127.0.0.1:8000 app:app
-
+ExecStart=${DEPLOY_DIR}/venv/bin/gunicorn -w 4 -b 0.0.0.0:8000 app:app
 
 [Install]
 WantedBy=multi-user.target
 SERVICE
 
+# Create Nginx configuration
 sudo tee /etc/nginx/sites-available/ithcapp > /dev/null << NGINX
 server {
     listen 80;
@@ -50,8 +57,11 @@ server {
 }
 NGINX
 
-ln -sf /etc/nginx/sites-available/ithcapp /etc/nginx/sites-enabled/
-nginx -t
+# Enable Nginx site
+sudo ln -sf /etc/nginx/sites-available/ithcapp /etc/nginx/sites-enabled/
+sudo nginx -t
+
+# Reload and restart services
 sudo systemctl daemon-reload
 sudo systemctl restart nginx
 sudo systemctl restart ithcapp
